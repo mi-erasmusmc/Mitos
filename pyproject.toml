@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ibis-cohort"
+version = "0.1.0"
+description = "Ibis-based recreation of the OHDSI Circe cohort expression builder."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "Ibis Cohort Developers"}]
+dependencies = [
+    "ibis-framework>=8.0.0",
+    "pydantic>=2.0.0",
+    "duckdb>=0.9.0",
+    "polars>=1.7.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+ibis-cohort = "ibis_cohort.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
