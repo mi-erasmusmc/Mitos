@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 import polars as pl
 import ibis
@@ -7,15 +8,12 @@ from ibis_cohort.build_context import BuildContext, CohortBuildOptions
 from ibis_cohort.builders.registry import build_events
 from ibis_cohort.tables import ConditionOccurrence, ConditionEra
 
-# ensure builders are registered
-import ibis_cohort.builders.condition_occurrence  # noqa: F401
-import ibis_cohort.builders.condition_era  # noqa: F401
-import ibis_cohort.builders.measurement  # noqa: F401
-
-
-def make_context(conn):
-    codeset_expr = ibis.memtable({"codeset_id": [1], "concept_id": [101]})
-    return BuildContext(conn, CohortBuildOptions(), codeset_expr)
+def make_context(conn, codesets=None):
+    if codesets is None:
+        codesets = ibis.memtable({"codeset_id": [1], "concept_id": [101]})
+    name = f"codesets_{uuid.uuid4().hex}"
+    conn.create_table(name, codesets, temp=True)
+    return BuildContext(conn, CohortBuildOptions(), conn.table(name))
 
 
 def test_condition_occurrence_builder_respects_codeset_and_first():
@@ -47,6 +45,35 @@ def test_condition_occurrence_builder_respects_codeset_and_first():
     assert result["event_id"].to_list() == [1]
 
 
+def test_condition_first_requires_earliest_event_to_satisfy_date_filter():
+    conn = ibis.duckdb.connect(database=":memory:")
+    condition_df = pl.DataFrame(
+        {
+            "condition_occurrence_id": [1, 2],
+            "person_id": [1, 1],
+            "condition_concept_id": [101, 101],
+            "condition_start_date": [datetime(2009, 5, 1), datetime(2011, 1, 1)],
+            "condition_end_date": [datetime(2009, 5, 2), datetime(2011, 1, 2)],
+            "condition_source_concept_id": [1001, 1002],
+            "visit_occurrence_id": [1, 1],
+        }
+    )
+    conn.create_table("condition_occurrence", condition_df, overwrite=True)
+
+    ctx = make_context(conn)
+    criteria = ConditionOccurrence(
+        **{
+            "CodesetId": 1,
+            "First": True,
+            "OccurrenceStartDate": {"Value": "2010-01-01", "Op": "gte"},
+        }
+    )
+
+    events = build_events(criteria, ctx)
+    assert events.count().execute() == 0, "First event occurs before allowed window, so cohort should be empty"
+
+
+
 def test_condition_occurrence_builder_filters_condition_source_concepts_by_codeset_id():
     conn = ibis.duckdb.connect(database=":memory:")
     condition_df = pl.DataFrame(
@@ -63,8 +90,8 @@ def test_condition_occurrence_builder_filters_condition_source_concepts_by_codes
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
 
     codesets = ibis.memtable({"codeset_id": [4], "concept_id": [44827910]})
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
-    criteria = ConditionOccurrence(**{"ConditionSourceConcept": 4})
+    ctx = make_context(conn, codesets)
+    criteria = ConditionOccurrence.model_validate({"ConditionSourceConcept": 4})
 
     events = build_events(criteria, ctx)
     result = events.to_polars()
@@ -113,7 +140,7 @@ def test_condition_builder_applies_nested_correlated_criteria():
     conn.create_table("observation_period", observation_df, overwrite=True)
 
     codesets = ibis.memtable({"codeset_id": [1, 2], "concept_id": [101, 201]})
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
+    ctx = make_context(conn, codesets)
 
     criteria = ConditionOccurrence(
         **{
@@ -157,7 +184,7 @@ def test_condition_era_builder_filters_length_and_first():
     conn.create_table("person", person_df, overwrite=True)
 
     codesets = ibis.memtable({"codeset_id": [1], "concept_id": [101]})
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
+    ctx = make_context(conn, codesets)
     criteria = ConditionEra(**{"CodesetId": 1, "EraLength": {"Value": 20, "Op": "gte"}, "First": True})
 
     events = build_events(criteria, ctx)
@@ -210,7 +237,7 @@ def test_correlated_restrict_visit_requires_shared_visit_ids():
     conn.create_table("observation_period", observation_df, overwrite=True)
 
     codesets = _codeset_table([(1, 101), (2, 201)])
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
+    ctx = make_context(conn, codesets)
 
     base_correlated = {
         "Criteria": {"Measurement": {"CodesetId": 2}},
@@ -256,7 +283,7 @@ def test_condition_occurrence_visit_type_filters_join_visits():
     conn.create_table("visit_occurrence", visit_df, overwrite=True)
 
     codesets = _codeset_table([(1, 101), (2, 201)])
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
+    ctx = make_context(conn, codesets)
     criteria = ConditionOccurrence(**{"CodesetId": 1, "VisitType": [{"CONCEPT_ID": 201}]})
 
     result = build_events(criteria, ctx).to_polars()
@@ -290,8 +317,8 @@ def test_condition_occurrence_visit_source_concept_filter():
     conn.create_table("visit_occurrence", visit_df, overwrite=True)
 
     codesets = _codeset_table([(1, 101), (3, 102)])
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
-    criteria = ConditionOccurrence(**{"CodesetId": 1, "VisitSourceConcept": 999})
+    ctx = make_context(conn, codesets)
+    criteria = ConditionOccurrence.model_validate({"CodesetId": 1, "VisitSourceConcept": 999})
 
     result = build_events(criteria, ctx).to_polars()
     assert result["event_id"].to_list() == [1, 2]
@@ -316,7 +343,7 @@ def test_condition_occurrence_condition_source_concept_codeset():
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
 
     codesets = _codeset_table([(1, 101), (2, 1001)])
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
+    ctx = make_context(conn, codesets)
     criteria = ConditionOccurrence(**{"CodesetId": 1, "ConditionSourceConcept": {"CodesetId": 2}})
 
     result = build_events(criteria, ctx).to_polars()
@@ -362,7 +389,7 @@ def test_correlated_ignore_observation_period_flag():
     conn.create_table("observation_period", observation_df, overwrite=True)
 
     codesets = _codeset_table([(1, 101), (2, 201)])
-    ctx = BuildContext(conn, CohortBuildOptions(), codesets)
+    ctx = make_context(conn, codesets)
 
     correlated_block = {
         "Criteria": {"Measurement": {"CodesetId": 2}},

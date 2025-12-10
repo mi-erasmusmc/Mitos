@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Callable
+
 import ibis
 import ibis.expr.types as ir
 
@@ -20,6 +22,7 @@ from ibis_cohort.criteria import (
     OccurrenceType,
     DemoGraphicCriteria,
     CriteriaColumn,
+    Criteria,
 )
 from ibis_cohort.tables import parse_single_criteria, VisitDetail
 from ibis_cohort.cohort_expression import ObservationFilter
@@ -39,10 +42,31 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
     if criteria_model is None:
         return ibis.literal(True)
 
+    count_column_name, count_column_enum = _resolve_count_column(correlated.occurrence)
+
     base_events = build_events(criteria_model, ctx)
+    base_events = _attach_count_columns(
+        base_events,
+        criteria_model,
+        ctx,
+        count_column_name=count_column_name,
+        count_column_enum=count_column_enum,
+    )
+    requires_corr_end_alignment = _requires_observation_period_end_alignment(correlated)
+    zero_window: ObservationFilter | None = None
     if not correlated.ignore_observation_period:
         zero_window = ObservationFilter(prior_days=0, post_days=0)
         base_events = apply_observation_window(base_events, zero_window, ctx)
+
+    index_events = events
+    if not correlated.ignore_observation_period:
+        missing_observation_bounds = (
+            "observation_period_start_date" not in index_events.columns
+            or "observation_period_end_date" not in index_events.columns
+        )
+        if missing_observation_bounds:
+            zero_window = zero_window or ObservationFilter(prior_days=0, post_days=0)
+            index_events = apply_observation_window(index_events, zero_window, ctx)
 
     select_fields = [
         base_events.person_id,
@@ -52,16 +76,19 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
     ]
     if "visit_occurrence_id" in base_events.columns:
         select_fields.append(base_events.visit_occurrence_id.name("_corr_visit_occurrence_id"))
+    if count_column_name and count_column_name in base_events.columns:
+        select_fields.append(base_events[count_column_name])
 
     criteria_events = base_events.select(*select_fields)
-    join_condition = events.person_id == criteria_events.person_id
+    join_condition = index_events.person_id == criteria_events.person_id
     if not correlated.ignore_observation_period:
-        if "observation_period_start_date" in events.columns:
-            join_condition &= criteria_events._corr_start_date >= events.observation_period_start_date
-        if "observation_period_end_date" in events.columns:
-            join_condition &= criteria_events._corr_start_date <= events.observation_period_end_date
-            join_condition &= criteria_events._corr_end_date <= events.observation_period_end_date
-    window_condition = _build_window_condition(events, criteria_events, correlated)
+        if "observation_period_start_date" in index_events.columns:
+            join_condition &= criteria_events._corr_start_date >= index_events.observation_period_start_date
+        if "observation_period_end_date" in index_events.columns:
+            join_condition &= criteria_events._corr_start_date <= index_events.observation_period_end_date
+            if requires_corr_end_alignment:
+                join_condition &= criteria_events._corr_end_date <= index_events.observation_period_end_date
+    window_condition = _build_window_condition(index_events, criteria_events, correlated)
     if window_condition is not None:
         join_condition &= window_condition
 
@@ -75,16 +102,15 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
         require_same_visit = True
 
     if require_same_visit:
-        if "visit_occurrence_id" in events.columns and "_corr_visit_occurrence_id" in criteria_events.columns:
+        if "visit_occurrence_id" in index_events.columns and "_corr_visit_occurrence_id" in criteria_events.columns:
             join_condition &= (
-                events.visit_occurrence_id.notnull()
+                index_events.visit_occurrence_id.notnull()
                 & criteria_events._corr_visit_occurrence_id.notnull()
-                & (events.visit_occurrence_id == criteria_events._corr_visit_occurrence_id)
+                & (index_events.visit_occurrence_id == criteria_events._corr_visit_occurrence_id)
             )
 
-    joined = events.join(criteria_events, join_condition, how="left")
+    joined = index_events.join(criteria_events, join_condition, how="left")
 
-    count_column_name = _resolve_count_column_name(correlated.occurrence)
     count_expr = criteria_events._corr_event_id
     if count_column_name and count_column_name in joined.columns:
         count_expr = joined[count_column_name]
@@ -272,8 +298,10 @@ def _correlated_window_value(
     *,
     default: str,
 ) -> ir.Value:
-    if use_event_end:
+    if use_event_end is True:
         return correlated_events._corr_end_date
+    if use_event_end is False:
+        return correlated_events._corr_start_date
     if default == "end":
         return correlated_events._corr_end_date
     return correlated_events._corr_start_date
@@ -283,12 +311,20 @@ _COUNT_COLUMN_MAPPING: dict[CriteriaColumn, str] = {
     CriteriaColumn.START_DATE: "_corr_start_date",
     CriteriaColumn.END_DATE: "_corr_end_date",
     CriteriaColumn.VISIT_ID: "_corr_visit_occurrence_id",
+    CriteriaColumn.DOMAIN_CONCEPT: "_corr_domain_concept_id",
+    CriteriaColumn.DOMAIN_SOURCE_CONCEPT: "_corr_domain_source_concept_id",
 }
 
 
-def _resolve_count_column_name(occurrence) -> str | None:
+_COUNT_COLUMN_SOURCES: dict[CriteriaColumn, Callable[[Criteria], str]] = {
+    CriteriaColumn.DOMAIN_CONCEPT: lambda criteria: criteria.get_concept_id_column(),
+    CriteriaColumn.DOMAIN_SOURCE_CONCEPT: lambda criteria: _source_concept_column(criteria),
+}
+
+
+def _resolve_count_column(occurrence):
     if occurrence is None or occurrence.count_column is None:
-        return None
+        return None, None
     column = occurrence.count_column
     enum_value: CriteriaColumn | None = None
     if isinstance(column, CriteriaColumn):
@@ -304,5 +340,56 @@ def _resolve_count_column_name(occurrence) -> str | None:
                     enum_value = member
                     break
     if enum_value is None:
-        return None
-    return _COUNT_COLUMN_MAPPING.get(enum_value)
+        return None, None
+    return _COUNT_COLUMN_MAPPING.get(enum_value), enum_value
+
+
+def _source_concept_column(criteria) -> str:
+    prefix = criteria.snake_case_class_name().split("_")[0]
+    return f"{prefix}_source_concept_id"
+
+
+def _attach_count_columns(
+    events: ir.Table,
+    criteria_model,
+    ctx: BuildContext,
+    *,
+    count_column_name: str | None,
+    count_column_enum: CriteriaColumn | None,
+) -> ir.Table:
+    if not count_column_name or not count_column_enum:
+        return events
+    source_getter = _COUNT_COLUMN_SOURCES.get(count_column_enum)
+    if source_getter is None:
+        return events
+    source_column = source_getter(criteria_model)
+    if source_column is None:
+        return events
+    table_name = criteria_model.snake_case_class_name()
+    try:
+        domain_table = ctx.table(table_name)
+    except Exception:
+        return events
+    if source_column not in domain_table.columns:
+        return events
+    primary_key = criteria_model.get_primary_key_column()
+    if primary_key not in domain_table.columns:
+        return events
+    lookup = domain_table.select(
+        domain_table[primary_key].name("_corr_join_key"),
+        domain_table[source_column].name(count_column_name),
+    )
+    augmented = events.join(lookup, events.event_id == lookup._corr_join_key, how="left")
+    return augmented.drop("_corr_join_key")
+
+
+def _requires_observation_period_end_alignment(correlated: CorrelatedCriteria) -> bool:
+    if correlated.start_window and correlated.start_window.use_event_end:
+        return True
+    if correlated.end_window and correlated.end_window.use_event_end:
+        return True
+    occurrence = correlated.occurrence
+    if occurrence and occurrence.count_column is not None:
+        resolved, _ = _resolve_count_column(occurrence)
+        return resolved == "_corr_end_date"
+    return False

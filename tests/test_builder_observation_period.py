@@ -7,8 +7,6 @@ from ibis_cohort.build_context import BuildContext, CohortBuildOptions
 from ibis_cohort.builders.registry import build_events
 from ibis_cohort.tables import ObservationPeriod
 
-import ibis_cohort.builders.observation_period  # noqa: F401
-
 
 def make_context(conn):
     empty_codeset = ibis.memtable({"codeset_id": [], "concept_id": []}, schema={"codeset_id": "int64", "concept_id": "int64"})

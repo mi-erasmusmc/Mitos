@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 from typing import Optional, Any, Union
 
 from .criteria import (
@@ -18,6 +18,12 @@ class UserDefinedPeriod(BaseModel):
 
     start_date: Optional[datetime] = Field(default=None, alias="StartDate")
     end_date: Optional[datetime] = Field(default=None, alias="EndDate")
+
+    @field_serializer("start_date", "end_date")
+    def _serialize_dates(self, value: datetime | None) -> str | None:
+        if value is None:
+            return None
+        return value.date().isoformat()
 
 
 class ConditionEra(Criteria):
@@ -89,6 +95,7 @@ class DrugExposure(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
+    drug_source_concept: Optional[int] = Field(default=None, alias="DrugSourceConcept")
 
     def get_start_date_column(self) -> str:
         return "drug_exposure_start_date"
@@ -141,6 +148,7 @@ class Measurement(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
+    measurement_source_concept: Optional[int] = Field(default=None, alias="MeasurementSourceConcept")
 
     def get_start_date_column(self) -> str:
         return "measurement_date"
@@ -172,6 +180,7 @@ class Observation(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
+    observation_source_concept: Optional[int] = Field(default=None, alias="ObservationSourceConcept")
 
     def get_start_date_column(self) -> str:
         return "observation_date"
@@ -196,6 +205,7 @@ class DeviceExposure(Criteria):
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
+    device_source_concept: Optional[int] = Field(default=None, alias="DeviceSourceConcept")
 
     def get_start_date_column(self) -> str:
         return "device_exposure_start_date"

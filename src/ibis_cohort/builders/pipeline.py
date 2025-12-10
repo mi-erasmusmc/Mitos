@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import ibis
+import ibis.expr.types as ir
 
 import polars as pl
 
 from ibis_cohort.build_context import BuildContext
-from ibis_cohort.builders.common import apply_observation_window, apply_end_strategy, collapse_events
+from ibis_cohort.builders.common import (
+    apply_observation_window,
+    apply_end_strategy,
+    collapse_events,
+)
 from ibis_cohort.builders.registry import build_events
 from ibis_cohort.cohort_expression import CohortExpression
 
@@ -35,6 +40,11 @@ OUTPUT_SCHEMA = {
 
 
 def build_primary_events(expression: CohortExpression, ctx: BuildContext):
+    def _maybe_materialize(table: ir.Table, label: str) -> ir.Table:
+        if ctx.options().capture_sql:
+            return ctx.materialize(table, label=label, analyze=True)
+        return table
+
     primary = expression.primary_criteria
     event_tables = [build_events(criteria, ctx) for criteria in primary.criteria_list]
     if not event_tables:
@@ -45,38 +55,47 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     events = events.mutate(_source_event_id=events.event_id)
     events = apply_observation_window(events, primary.observation_window, ctx)
     events = _assign_primary_event_ids(events)
+    if _should_limit(primary.primary_limit):
+        events = _apply_result_limit(events, primary.primary_limit)
+    events = ctx.materialize(events, label="primary_events", analyze=True)
+
+    # Short-circuit the remainder of the pipeline when no primary events exist.
+    try:
+        primary_count = events.count().execute()
+    except Exception:
+        primary_count = None
+    if primary_count == 0:
+        events = _drop_aux_columns(events)
+        return events.limit(0)
+
     events = apply_criteria_group(events, expression.additional_criteria, ctx)
+    if expression.additional_criteria:
+        events = ctx.materialize(events, label="additional_criteria", analyze=True)
+
     events = apply_inclusion_rules(events, expression.inclusion_rules, ctx)
+    if expression.inclusion_rules:
+        events = ctx.materialize(events, label="inclusion", analyze=True)
+    # Circe ignores QualifiedLimit, so we do the same to preserve parity.
+
     events = apply_censoring(events, expression.censoring_criteria, ctx)
-    events = _apply_result_limit(events, expression.expression_limit)
+    if expression.censoring_criteria:
+        events = ctx.materialize(events, label="censoring", analyze=True)
+    if _should_limit(expression.expression_limit):
+        events = _apply_result_limit(events, expression.expression_limit)
     events = apply_end_strategy(events, expression.end_strategy, ctx)
-    if primary.primary_limit and primary.primary_limit.type.lower() == "first":
-        if "_person_ordinal" in events.columns:
-            events = events.filter(events._person_ordinal == 1)
-        else:
-            window = ibis.window(group_by=events.person_id, order_by=[events.start_date, events.event_id])
-            events = events.mutate(_row_number=ibis.row_number().over(window)).filter(lambda t: t._row_number == 0)
-            if "_row_number" in events.columns:
-                cols = [col for col in events.columns if col != "_row_number"]
-                events = events.select(*cols)
+    if expression.end_strategy and not expression.end_strategy.is_empty():
+        events = _maybe_materialize(events, label="strategy_ends")
     events = apply_censor_window(events, expression.censor_window, ctx)
-    drop_cols = [
-        col
-        for col in (
-            "_source_event_id",
-            "_person_ordinal",
-            "observation_period_start_date",
-            "observation_period_end_date",
-        )
-        if col in events.columns
-    ]
-    if drop_cols:
-        events = events.drop(*drop_cols)
+    events = _drop_aux_columns(events)
     events = collapse_events(events, expression.collapse_settings)
+    if expression.collapse_settings and expression.collapse_settings.collapse_type:
+        events = _maybe_materialize(events, label="final_cohort")
     return events
 
 
-def build_primary_events_polars(expression: CohortExpression, ctx: BuildContext) -> pl.DataFrame:
+def build_primary_events_polars(
+    expression: CohortExpression, ctx: BuildContext
+) -> pl.DataFrame:
     events = build_primary_events(expression, ctx)
     if events is None:
         return pl.DataFrame(schema=OUTPUT_SCHEMA)
@@ -122,3 +141,22 @@ def _apply_result_limit(events, limit):
     ranked = events.mutate(_result_row=ibis.row_number().over(window))
     limited = ranked.filter(ranked._result_row == 0)
     return limited.drop("_result_row")
+
+
+def _drop_aux_columns(events: ir.Table) -> ir.Table:
+    drop_cols = [
+        col
+        for col in (
+            "_source_event_id",
+            "_person_ordinal",
+            "observation_period_start_date",
+            "observation_period_end_date",
+            "_result_row",
+        )
+        if col in events.columns
+    ]
+    if drop_cols:
+        events = events.drop(*drop_cols)
+    return events
+def _should_limit(limit) -> bool:
+    return bool(limit and (limit.type or "all").lower() != "all")

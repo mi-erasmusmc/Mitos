@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import hashlib
 from typing import Dict, Type
 
 import ibis.expr.types as ir
@@ -29,4 +30,18 @@ def get_builder(criteria: Criteria):
 
 def build_events(criteria: Criteria, ctx: BuildContext) -> ir.Table:
     builder = get_builder(criteria)
-    return builder(criteria, ctx)
+    table = builder(criteria, ctx)
+    cache_key, label = _criteria_cache_key(criteria)
+    return ctx.get_or_materialize_slice(cache_key, table, label=label)
+
+
+def _criteria_cache_key(criteria: Criteria) -> tuple[str, str]:
+    payload = criteria.model_dump_json(
+        by_alias=True,
+        exclude_defaults=False,
+        exclude_none=False,
+    )
+    raw_key = f"{criteria.__class__.__name__}:{payload}"
+    digest = hashlib.sha1(raw_key.encode("utf-8")).hexdigest()[:8]
+    label = f"{criteria.__class__.__name__.lower()}_{digest}"
+    return raw_key, label

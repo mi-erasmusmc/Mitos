@@ -18,9 +18,7 @@ def make_context(conn):
 
 def test_apply_codeset_filter():
     conn = ibis.duckdb.connect(database=":memory:")
-    table = ibis.memtable(
-        {"person_id": [1, 2], "condition_concept_id": [101, 102]}
-    )
+    table = ibis.memtable({"person_id": [1, 2], "condition_concept_id": [101, 102]})
     ctx = make_context(conn)
 
     filtered = apply_codeset_filter(table, "condition_concept_id", 1, ctx)
@@ -33,11 +31,14 @@ def test_apply_age_filter():
     person_df = pl.DataFrame({"person_id": [1, 2], "year_of_birth": [1980, 2000]})
     conn.create_table("person", person_df, overwrite=True)
     table = ibis.memtable(
-        {"person_id": [1, 2], "condition_start_date": [date(2020, 1, 1), date(2020, 1, 1)]},
+        {
+            "person_id": [1, 2],
+            "condition_start_date": [date(2020, 1, 1), date(2020, 1, 1)],
+        },
         schema=ibis.schema({"person_id": "int64", "condition_start_date": "date"}),
     )
     ctx = make_context(conn)
-    age_range = NumericRange(Value=30, Op="gte")
+    age_range = NumericRange.model_validate({"Value": 30, "Op": "gte"})
 
     filtered = apply_age_filter(table, age_range, ctx, "condition_start_date")
     result = filtered.to_polars()

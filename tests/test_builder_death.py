@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 import polars as pl
 import ibis
@@ -7,12 +8,12 @@ from ibis_cohort.build_context import BuildContext, CohortBuildOptions
 from ibis_cohort.builders.registry import build_events
 from ibis_cohort.tables import Death
 
-import ibis_cohort.builders.death  # noqa: F401
-
 
 def make_context(conn):
     codeset_expr = ibis.memtable({"codeset_id": [1], "concept_id": [701]})
-    return BuildContext(conn, CohortBuildOptions(), codeset_expr)
+    name = f"codesets_{uuid.uuid4().hex}"
+    conn.create_table(name, codeset_expr, temp=True)
+    return BuildContext(conn, CohortBuildOptions(), conn.table(name))
 
 
 def test_death_builder_generates_events():
@@ -30,7 +31,7 @@ def test_death_builder_generates_events():
     conn.create_table("person", person_df, overwrite=True)
 
     ctx = make_context(conn)
-    criteria = Death(**{"CodesetId": 1})
+    criteria = Death.model_validate({"CodesetId": 1})
 
     events = build_events(criteria, ctx)
     result = events.to_polars()

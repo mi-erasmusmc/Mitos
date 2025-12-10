@@ -49,7 +49,7 @@ def build_payer_plan_period(criteria: PayerPlanPeriod, ctx: BuildContext):
     )
 
     if criteria.first:
-        table = apply_first_event(table, "payer_plan_period_start_date", "payer_plan_period_id")
+        table = apply_first_event(table, start_column, "payer_plan_period_id")
 
     events = standardize_output(
         table,

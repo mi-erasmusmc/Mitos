@@ -42,7 +42,7 @@ def build_observation_period(criteria: ObservationPeriod, ctx: BuildContext):
     )
 
     if criteria.first:
-        table = apply_first_event(table, "observation_period_start_date", "observation_period_id")
+        table = apply_first_event(table, start_column, "observation_period_id")
 
     events = standardize_output(
         table,

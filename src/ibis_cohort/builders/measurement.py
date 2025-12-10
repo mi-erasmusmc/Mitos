@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ibis_cohort.build_context import BuildContext
 from ibis_cohort.tables import Measurement
+from ibis_cohort.criteria import ConceptSetSelection
 from ibis_cohort.builders.common import (
     apply_age_filter,
     apply_codeset_filter,
@@ -24,6 +25,8 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
     table = ctx.table("measurement")
     concept_column = criteria.get_concept_id_column()
     table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
+    if criteria.first:
+        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
 
     table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
@@ -52,9 +55,12 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
     table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
-
-    if criteria.first:
-        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
+    source_concept = getattr(criteria, "measurement_source_concept", None)
+    if source_concept is not None:
+        if hasattr(source_concept, "codeset_id"):
+            table = apply_concept_set_selection(table, "measurement_source_concept_id", source_concept, ctx)
+        else:
+            table = table.filter(table.measurement_source_concept_id == int(source_concept))
 
     events = standardize_output(
         table,

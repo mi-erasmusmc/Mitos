@@ -50,6 +50,8 @@ def build_observation(criteria: Observation, ctx: BuildContext):
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
     table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
+    if criteria.observation_source_concept is not None:
+        table = table.filter(table.observation_source_concept_id == int(criteria.observation_source_concept))
 
     if criteria.first:
         table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())

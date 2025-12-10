@@ -5,7 +5,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, Union, Any, Dict
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict, field_serializer, AliasChoices
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    ConfigDict,
+    field_serializer,
+    AliasChoices,
+)
 
 from .criteria import Criteria, CriteriaGroup
 from .concept_set import ConceptSet
@@ -43,18 +50,24 @@ class PrimaryCriteria(BaseModel):
     model_config = ConfigDict(populate_by_name=False)
 
     criteria_list: list[Criteria] = Field(default_factory=list, alias="CriteriaList")
-    observation_window: ObservationFilter = Field(default=None, alias="ObservationWindow")
-    primary_limit: ResultLimit = Field(default_factory=ResultLimit, alias="PrimaryCriteriaLimit")
+    observation_window: ObservationFilter = Field(
+        default=None, alias="ObservationWindow"
+    )
+    primary_limit: ResultLimit = Field(
+        default_factory=ResultLimit, alias="PrimaryCriteriaLimit"
+    )
 
-
-    @field_validator('criteria_list', mode="before")
+    @field_validator("criteria_list", mode="before")
     @classmethod
     def validate_criteria_list(cls, v):
         return parse_criteria_list(v)
 
-    @field_serializer('criteria_list')
-    def serialize_criteria_list(self, criteria_list: list[Criteria]) -> list[dict[str, Any]]:
+    @field_serializer("criteria_list")
+    def serialize_criteria_list(
+        self, criteria_list: list[Criteria]
+    ) -> list[dict[str, Any]]:
         return [serialize_criteria(criteria) for criteria in criteria_list]
+
 
 class InclusionRule(BaseModel):
     model_config = ConfigDict(populate_by_name=False)
@@ -104,14 +117,26 @@ class CohortExpression(BaseModel):
     cdm_version_range: Optional[str] = Field(default=None, alias="cdmVersionRange")
     title: Optional[str] = Field(default=None, alias="Title")
     primary_criteria: PrimaryCriteria = Field(..., alias="PrimaryCriteria")
-    additional_criteria: Optional[CriteriaGroup] = Field(None, alias="AdditionalCriteria")
+    additional_criteria: Optional[CriteriaGroup] = Field(
+        None, alias="AdditionalCriteria"
+    )
     concept_sets: list[ConceptSet] = Field(..., alias="ConceptSets")
-    qualified_limit: ResultLimit = Field(default_factory=ResultLimit, alias="QualifiedLimit")
-    expression_limit: ResultLimit = Field(default_factory=ResultLimit, alias="ExpressionLimit")
-    inclusion_rules: list[InclusionRule] = Field(default_factory=list, alias="InclusionRules")
+    qualified_limit: ResultLimit = Field(
+        default_factory=ResultLimit, alias="QualifiedLimit"
+    )
+    expression_limit: ResultLimit = Field(
+        default_factory=ResultLimit, alias="ExpressionLimit"
+    )
+    inclusion_rules: list[InclusionRule] = Field(
+        default_factory=list, alias="InclusionRules"
+    )
     end_strategy: Optional[EndStrategy] = Field(default=None, alias="EndStrategy")
-    censoring_criteria: list[Criteria] = Field(default_factory=list, alias="CensoringCriteria")
-    collapse_settings: CollapseSettings = Field(default_factory=CollapseSettings, alias="CollapseSettings")
+    censoring_criteria: list[Criteria] = Field(
+        default_factory=list, alias="CensoringCriteria"
+    )
+    collapse_settings: Optional[CollapseSettings] = Field(
+        default_factory=CollapseSettings, alias="CollapseSettings"
+    )
     censor_window: Optional[Period] = Field(default=None, alias="CensorWindow")
 
     @field_validator("censoring_criteria", mode="before")
@@ -120,7 +145,9 @@ class CohortExpression(BaseModel):
         return parse_criteria_list(v)
 
     @field_serializer("censoring_criteria")
-    def serialize_censoring_criteria(self, criteria_list: list[Criteria]) -> list[dict[str, Any]]:
+    def serialize_censoring_criteria(
+        self, criteria_list: list[Criteria]
+    ) -> list[dict[str, Any]]:
         return [serialize_criteria(criteria) for criteria in criteria_list]
 
 

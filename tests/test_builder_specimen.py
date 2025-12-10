@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 import polars as pl
 import ibis
@@ -6,8 +7,6 @@ import ibis
 from ibis_cohort.build_context import BuildContext, CohortBuildOptions
 from ibis_cohort.builders.registry import build_events
 from ibis_cohort.tables import Specimen
-
-import ibis_cohort.builders.specimen  # noqa: F401
 
 
 def make_context(conn, concept_ids):
@@ -17,7 +16,9 @@ def make_context(conn, concept_ids):
             "concept_id": concept_ids,
         }
     )
-    return BuildContext(conn, CohortBuildOptions(), codesets)
+    name = f"codeset_{uuid.uuid4().hex}"
+    conn.create_table(name, codesets, temp=True)
+    return BuildContext(conn, CohortBuildOptions(), conn.table(name))
 
 
 def test_specimen_applies_text_and_codeset_filters():

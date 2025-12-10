@@ -16,6 +16,7 @@ from ibis_cohort.builders.common import (
 )
 from ibis_cohort.builders.registry import register
 from ibis_cohort.builders.groups import apply_criteria_group
+from ibis_cohort.criteria import ConceptSetSelection
 
 
 @register("ProcedureOccurrence")
@@ -24,6 +25,8 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
 
     concept_column = criteria.get_concept_id_column()
     table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
+    if criteria.first:
+        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
 
     table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
@@ -45,8 +48,13 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
     table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
 
-    if criteria.first:
-        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
+    source_filter = getattr(criteria, "procedure_source_concept", None)
+    if source_filter is not None:
+        if isinstance(source_filter, ConceptSetSelection):
+            selection = source_filter
+        else:
+            selection = ConceptSetSelection(CodesetId=int(source_filter))
+        table = apply_concept_set_selection(table, "procedure_source_concept_id", selection, ctx)
 
     events = standardize_output(
         table,

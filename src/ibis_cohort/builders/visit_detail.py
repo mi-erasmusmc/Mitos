@@ -13,6 +13,7 @@ from ibis_cohort.builders.common import (
     apply_care_site_filter,
     apply_location_region_filter,
     apply_first_event,
+    project_event_columns,
     standardize_output,
 )
 from ibis_cohort.builders.groups import apply_criteria_group
@@ -24,6 +25,8 @@ def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
     table = ctx.table("visit_detail")
 
     table = apply_codeset_filter(table, "visit_detail_concept_id", criteria.codeset_id, ctx)
+    if criteria.first:
+        table = apply_first_event(table, "visit_detail_start_date", "visit_detail_id")
     table = apply_date_range(table, "visit_detail_start_date", criteria.visit_detail_start_date)
     table = apply_date_range(table, "visit_detail_end_date", criteria.visit_detail_end_date)
     table = apply_concept_set_selection(table, "visit_detail_type_concept_id", criteria.visit_detail_type_cs, ctx)
@@ -33,7 +36,12 @@ def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
     if criteria.age:
         table = apply_age_filter(table, criteria.age, ctx, "visit_detail_end_date")
     table = apply_gender_filter(table, [], criteria.gender_cs, ctx)
-    table = apply_provider_specialty_filter(table, criteria.provider_specialty_cs, ctx)
+    table = apply_provider_specialty_filter(
+        table,
+        None,
+        criteria.provider_specialty_cs,
+        ctx,
+    )
     table = apply_care_site_filter(table, criteria.place_of_service_cs, ctx)
     table = apply_location_region_filter(
         table,
@@ -44,8 +52,13 @@ def build_visit_detail(criteria: VisitDetail, ctx: BuildContext):
         ctx=ctx,
     )
 
-    if criteria.first:
-        table = apply_first_event(table, "visit_detail_start_date", "visit_detail_id")
+    table = project_event_columns(
+        table,
+        primary_key="visit_detail_id",
+        start_column="visit_detail_start_date",
+        end_column="visit_detail_end_date",
+        include_visit_occurrence=True,
+    )
 
     events = standardize_output(
         table,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import reduce
+from pathlib import Path
 from typing import Callable, Iterable, Optional
 import uuid
 import weakref
@@ -21,6 +22,8 @@ class CohortBuildOptions:
     cohort_id: Optional[int] = None
     generate_stats: bool = False
     temp_emulation_schema: Optional[str] = None
+    profile_dir: Optional[str] = None
+    capture_sql: bool = False
 
 
 @dataclass
@@ -48,6 +51,14 @@ class BuildContext:
             self._codeset_resource = CodesetResource(table=codeset_resource)
         self._codesets = self._codeset_resource.table
         self._cleanup_callbacks: list[Callable[[], None]] = []
+        self._correlated_cache: dict[str, ir.Table] = {}
+        self._profile_dir = None
+        if options.profile_dir:
+            path = Path(options.profile_dir).resolve()
+            path.mkdir(parents=True, exist_ok=True)
+            self._profile_dir = path
+        self._captured_sql: list[tuple[str, str]] = []
+        self._slice_cache: dict[str, ir.Table] = {}
         weakref.finalize(self, self.close)
 
     def _table(self, schema: Optional[str], name: str) -> ir.Table:
@@ -73,6 +84,72 @@ class BuildContext:
         _ = is_exclusion  # placeholder for future differentiated handling
         return self._codesets.filter(self._codesets.codeset_id == codeset_id)
 
+    def get_cached_correlated(self, key: str) -> ir.Table | None:
+        return self._correlated_cache.get(key)
+
+    def cache_correlated(self, key: str, table: ir.Table) -> None:
+        self._correlated_cache[key] = table
+
+    def materialize(
+        self,
+        expr: ir.Table,
+        *,
+        label: str,
+        temp: bool = True,
+        analyze: bool = True,
+    ) -> ir.Table:
+        """
+        Materialize an Ibis expression, capturing a unique DuckDB profiling artifact for this step.
+        """
+        step_id = uuid.uuid4().hex[:8]
+        table_name = f"_stage_{label}_{step_id}"
+        profile_filename: Path | None = None
+        profiling_enabled = False
+        if self._profile_dir is not None:
+            profile_filename = (self._profile_dir / f"ibis_profile_{label}_{step_id}.json").resolve()
+            try:
+                escaped = str(profile_filename).replace("'", "''")
+                self._conn.raw_sql(f"PRAGMA profiling_output='{escaped}'")
+                self._conn.raw_sql("PRAGMA enable_profiling='json'")
+                profiling_enabled = True
+            except Exception as exc:  # pragma: no cover - diagnostics only
+                print(f"Warning: Could not enable profiling for {label}: {exc}")
+        sql = expr.compile().strip().rstrip(";")
+        temp_kw = "TEMP " if temp else ""
+        quoted_table = _quote_identifier(table_name)
+        create_sql = f"CREATE {temp_kw}TABLE {quoted_table} AS {sql}"
+        try:
+            self._conn.raw_sql(create_sql)
+        except Exception as exc:
+            print(f"Error materializing {label}: {exc}")
+            raise
+        else:
+            if self._options.capture_sql:
+                self._captured_sql.append((table_name, create_sql))
+        finally:
+            if profiling_enabled:
+                try:
+                    self._conn.raw_sql("PRAGMA disable_profiling")
+                except Exception:
+                    pass
+        if profiling_enabled and profile_filename is not None:
+            print(f" [Profile Captured]: {profile_filename} (Table: {table_name})")
+        if analyze:
+            try:
+                self._conn.raw_sql(f"ANALYZE {table_name}")
+            except Exception:
+                pass
+        def _drop():
+            try:
+                self._conn.drop_table(table_name)
+            except Exception:
+                try:
+                    self._conn.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+                except Exception:
+                    pass
+        self.register_cleanup(_drop)
+        return self._conn.table(table_name)
+
     @property
     def codesets(self) -> ir.Table:
         return self._codesets
@@ -84,8 +161,27 @@ class BuildContext:
     def options(self) -> CohortBuildOptions:
         return self._options
 
+    def captured_sql(self) -> list[tuple[str, str]]:
+        return list(self._captured_sql)
+
     def register_cleanup(self, callback: Callable[[], None]):
         self._cleanup_callbacks.append(callback)
+
+    def get_or_materialize_slice(
+        self,
+        cache_key: str,
+        expr: ir.Table,
+        *,
+        label: str | None = None,
+    ) -> ir.Table:
+        """Materialize an expression once and reuse the resulting temp table for later lookups."""
+        cached = self._slice_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        label_hint = label or "slice"
+        table = self.materialize(expr, label=label_hint, temp=True, analyze=True)
+        self._slice_cache[cache_key] = table
+        return table
 
     def close(self):
         if self._codeset_resource is not None:
@@ -97,6 +193,8 @@ class BuildContext:
                 callback()
             except Exception:
                 pass
+        self._captured_sql.clear()
+        self._slice_cache.clear()
 
 
 def compile_codesets(

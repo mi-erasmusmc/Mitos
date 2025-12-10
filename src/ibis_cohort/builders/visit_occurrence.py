@@ -11,6 +11,9 @@ from ibis_cohort.builders.common import (
     apply_first_event,
     apply_gender_filter,
     apply_numeric_range,
+    apply_provider_specialty_filter,
+    apply_visit_concept_filters,
+    project_event_columns,
     standardize_output,
 )
 from ibis_cohort.builders.registry import register
@@ -27,11 +30,16 @@ def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
     table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
 
-    table = apply_concept_filters(table, "visit_concept_id", criteria.visit_type)
-    table = apply_concept_set_selection(table, "visit_concept_id", criteria.visit_type_cs, ctx)
+    table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
     if criteria.visit_type_exclude:
         table = apply_concept_filters(table, "visit_concept_id", criteria.visit_type, exclude=True)
 
+    table = apply_provider_specialty_filter(
+        table,
+        criteria.provider_specialty,
+        criteria.provider_specialty_cs,
+        ctx,
+    )
     table = apply_concept_filters(table, "place_of_service_concept_id", criteria.place_of_service)
     table = apply_concept_set_selection(table, "place_of_service_concept_id", criteria.place_of_service_cs, ctx)
     if criteria.visit_length:
@@ -41,8 +49,19 @@ def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
 
+    if criteria.visit_source_concept is not None:
+        table = table.filter(table.visit_source_concept_id == criteria.visit_source_concept)
+
     if criteria.first:
         table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
+
+    table = project_event_columns(
+        table,
+        primary_key=criteria.get_primary_key_column(),
+        start_column=criteria.get_start_date_column(),
+        end_column=criteria.get_end_date_column(),
+        include_visit_occurrence=True,
+    )
 
     events = standardize_output(
         table,

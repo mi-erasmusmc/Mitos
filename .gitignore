@@ -66,6 +66,7 @@ nbactions.xml
 nb-configuration.xml
 
 # R / RStudio
+*.Rproj
 .Rhistory
 .Rapp.history
 .RData
@@ -99,3 +100,6 @@ temp/
 # OS junk
 .DS_Store
 Thumbs.db
+
+fixtures/
+cohorts/

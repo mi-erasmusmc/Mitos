@@ -52,14 +52,18 @@ def test_compile_codesets_handles_descendants_and_exclusions():
 
     expression = ConceptSetExpression(
         items=[
-            ConceptSetItem(
-                concept=Concept(concept_id=1),
-                include_descendants=True,
-                include_mapped=True,
+            ConceptSetItem.model_validate(
+                {
+                    "concept": Concept.model_validate({"concept_id": 1}),
+                    "include_descendants": True,
+                    "include_mapped": True,
+                }
             ),
-            ConceptSetItem(
-                concept=Concept(concept_id=3),
-                is_excluded=True,
+            ConceptSetItem.model_validate(
+                {
+                    "concept": Concept.model_validate({"concept_id": 3}),
+                    "is_excluded": True,
+                }
             ),
         ]
     )
@@ -69,8 +73,8 @@ def test_compile_codesets_handles_descendants_and_exclusions():
     resource = compile_codesets(conn, [concept_set], options)
     table = resource.table
     result = (
-        table.filter(table.codeset_id == 1)
-        .order_by(table.concept_id)
+        table.filter(table["codeset_id"] == ibis.literal(1))
+        .order_by(table["concept_id"])
         .to_polars()
     )
 

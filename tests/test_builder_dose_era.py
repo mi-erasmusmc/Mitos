@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 
 import polars as pl
 import ibis
@@ -7,9 +8,6 @@ from ibis_cohort.build_context import BuildContext, CohortBuildOptions
 from ibis_cohort.builders.registry import build_events
 from ibis_cohort.tables import DoseEra
 
-import ibis_cohort.builders.dose_era  # noqa: F401
-
-
 def make_context(conn, concept_ids):
     codesets = ibis.memtable(
         {
@@ -17,7 +15,9 @@ def make_context(conn, concept_ids):
             "concept_id": concept_ids,
         }
     )
-    return BuildContext(conn, CohortBuildOptions(), codesets)
+    name = f"codesets_{uuid.uuid4().hex}"
+    conn.create_table(name, codesets, temp=True)
+    return BuildContext(conn, CohortBuildOptions(), conn.table(name))
 
 
 def test_dose_era_filters_and_first_flag():
@@ -41,7 +41,9 @@ def test_dose_era_filters_and_first_flag():
             "dose_value": [5.0, 15.0, 25.0],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     conn.create_table("dose_era", dose_era_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)
 
@@ -58,4 +60,6 @@ def test_dose_era_filters_and_first_flag():
     events = build_events(criteria, ctx)
     result = events.to_polars()
 
-    assert result["event_id"].to_list() == [2], "Dose value filter should retain second era and first flag keeps earliest"
+    assert result["event_id"].to_list() == [2], (
+        "Dose value filter should retain second era and first flag keeps earliest"
+    )

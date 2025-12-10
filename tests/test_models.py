@@ -6,7 +6,9 @@ import pytest
 from ibis_cohort.cohort_expression import CohortExpression
 
 
-COHORT_FILES = sorted(Path("cohorts").glob("*.json")) + sorted(Path("fixtures/phenotypes").glob("*.json"))
+COHORT_FILES = sorted(Path("cohorts").glob("*.json")) + sorted(
+    Path("fixtures/phenotypes").glob("*.json")
+)
 UNSUPPORTED_CRITERIA = set()
 
 
@@ -30,7 +32,9 @@ def strip_none(value):
     return value
 
 
-@pytest.mark.parametrize("cohort_path", COHORT_FILES, ids=[p.name for p in COHORT_FILES])
+@pytest.mark.parametrize(
+    "cohort_path", COHORT_FILES, ids=[p.name for p in COHORT_FILES]
+)
 def test_cohort_expression_round_trip(cohort_path: Path):
     original = json.loads(cohort_path.read_text())
 
@@ -38,6 +42,8 @@ def test_cohort_expression_round_trip(cohort_path: Path):
         pytest.skip("Phenotype uses unsupported criteria types.")
 
     parsed = CohortExpression.model_validate_json(cohort_path.read_text())
-    regenerated = parsed.model_dump(by_alias=True, exclude_none=True, exclude_defaults=False)
+    regenerated = parsed.model_dump(
+        by_alias=True, exclude_none=True, exclude_defaults=False
+    )
 
     assert strip_none(regenerated) == strip_none(original)

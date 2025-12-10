@@ -27,6 +27,8 @@ def build_condition_occurrence(criteria: ConditionOccurrence, ctx: BuildContext)
 
     concept_column = criteria.get_concept_id_column()
     table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
+    if criteria.first:
+        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
 
     table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
@@ -62,9 +64,6 @@ def build_condition_occurrence(criteria: ConditionOccurrence, ctx: BuildContext)
         table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
         if visit_source is not None:
             table = table.filter(table.visit_source_concept_id == int(visit_source))
-
-    if criteria.first:
-        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
 
     events = standardize_output(
         table,
