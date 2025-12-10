@@ -98,14 +98,24 @@ def get_connection(args: argparse.Namespace) -> ibis.BaseBackend:
         config["database"] = args.cdm_db
 
     print(f"Connecting to backend: {backend_name}")
+
+    # try to import the backend entrypoint
     try:
         entrypoint = getattr(ibis, backend_name)
+    except AttributeError:
+        raise ValueError(f"Ibis backend {backend_name} is not recognized.")
+    except ImportError as e:
+        raise ImportError(
+            f"Failed to import the '{backend_name}' backend. " 
+            f"You likely need to install the driver.\n" ''
+            f"Try running: pip install 'ibis-framework[{backend_name}]'"
+        ) from e
+
+    try:
         con = entrypoint.connect(**config)
         return con
-    except AttributeError:
-        raise ValueError(f"Ibis backend '{backend_name}' is not installed or invalid.")
     except Exception as e:
-        raise RuntimeError(f"Failed to connect to {backend_name}: {e}")
+        raise RuntimeError(f"Connection to {backend_name} failed: {e}") from e
 
 
 def get_ohdsi_dialect(con: ibis.BaseBackend) -> str:
