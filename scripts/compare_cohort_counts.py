@@ -30,7 +30,9 @@ IBIS_TO_OHDSI_DIALECT = {
 }
 
 ConfigPrimitive: TypeAlias = str | int | float | bool | None
-ConfigValue: TypeAlias = ConfigPrimitive | list["ConfigValue"] | dict[str, "ConfigValue"]
+ConfigValue: TypeAlias = (
+    ConfigPrimitive | list["ConfigValue"] | dict[str, "ConfigValue"]
+)
 ConfigDict: TypeAlias = dict[str, ConfigValue]
 
 
@@ -106,8 +108,9 @@ def get_connection(args: argparse.Namespace) -> ibis.BaseBackend:
         raise ValueError(f"Ibis backend {backend_name} is not recognized.")
     except ImportError as e:
         raise ImportError(
-            f"Failed to import the '{backend_name}' backend. " 
-            f"You likely need to install the driver.\n" ''
+            f"Failed to import the '{backend_name}' backend. "
+            f"You likely need to install the driver.\n"
+            ""
             f"Try running: pip install 'ibis-framework[{backend_name}]'"
         ) from e
 
@@ -134,9 +137,13 @@ def quote_ident(value: str) -> str:
 
 
 def qualify_identifier(name: str, schema: str | None) -> str:
-    if schema:
-        return f"{quote_ident(schema)}.{quote_ident(name)}"
-    return quote_ident(name)
+    if not schema:
+        return quote_ident(name)
+
+    parts = schema.split(".")
+    quoted_schema = ".".join(quote_ident(p) for p in parts)
+
+    return f"{quoted_schema}.{quote_ident(name)}"
 
 
 def wrap_count_query(sql: str) -> str:
@@ -458,6 +465,26 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
+    config = {}
+    if args.config and args.profile:
+        config = load_config_with_env_vars(args.config, args.profile)
+
+    cdm_schema = args.cdm_schema or config.get("cdm_schema")
+    if not cdm_schema:
+        print(
+            "Error: --cdm-schema is required (via CLI or profiles.yaml)",
+            file=sys.stderr,
+        )
+        return 1
+
+    vocab_schema = args.vocab_schema or config.get("vocab_schema") or cdm_schema
+    result_schema = args.result_schema or config.get("result_schema")
+    temp_schema = args.temp_schema or config.get("temp_schema")
+
+    target_table = args.target_table or config.get("target_table") or "target_table"
+
+
     json_path = Path(args.json)
     if not json_path.exists():
         raise SystemExit(f"Cohort JSON not found: {json_path}")
@@ -470,8 +497,8 @@ def main() -> int:
     python_sql, python_count, python_metrics, python_stages = run_python_pipeline(
         con=con,
         json_path=json_path,
-        cdm_schema=args.cdm_schema,
-        vocab_schema=args.vocab_schema,
+        cdm_schema=cdm_schema,
+        vocab_schema=vocab_schema,
         capture_stages=stage_capture,
         debug_prefix=args.python_debug_prefix,
     )
@@ -479,19 +506,18 @@ def main() -> int:
     if args.python_sql_out:
         Path(args.python_sql_out).write_text(python_sql)
 
-    result_schema = args.result_schema or args.cdm_schema
     target_schema = result_schema
 
     circe_sql, circe_gen_ms = generate_circe_sql_via_r(
         json_path=json_path,
         target_dialect=ohdsi_dialect,
-        cdm_schema=args.cdm_schema,
-        vocab_schema=args.vocab_schema or args.cdm_schema,
+        cdm_schema=cdm_schem,
+        vocab_schema=vocab_schema,
         result_schema=result_schema,
         target_schema=target_schema,
-        target_table=args.target_table,
+        target_table=target_table,
         cohort_id=args.cohort_id,
-        temp_schema=args.temp_schema or result_schema,
+        temp_schema=temp_schema,
     )
 
     if args.circe_sql_out:
@@ -501,9 +527,9 @@ def main() -> int:
         con=con,
         sql=circe_sql,
         result_schema=target_schema,
-        target_table=args.target_table,
+        target_table=target_table,
         cohort_id=args.cohort_id,
-        temp_schema=args.temp_schema or result_schema,
+        temp_schema=temp_schema,
     )
 
     python_total_ms = python_metrics["total_ms"]
