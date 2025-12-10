@@ -1,0 +1,14 @@
+# Local Development
+local_duck:
+  backend: duckdb
+  database: "duckyS_local.duckdb"
+  read_only: false
+
+# Remote Databricks
+databricks_dev:
+  backend: databricks
+  server_hostname: "abc-12345.cloud.databricks.com"
+  http_path: "/sql/1.0/warehouses/abcdef123456"
+  access_token: "${DATABRICKS_TOKEN}"
+  catalog: "hive_metastore"
+  schema: "default"
