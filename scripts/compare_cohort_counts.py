@@ -120,14 +120,21 @@ class DatabricksProfile(BaseProfile):
             "http_path": self.http_path,
             "access_token": self.access_token.get_secret_value(),
         }
+
+        target_catalog = self.catalog
+        if not target_catalog and self.result_schema and "." in self.result_schema:
+            target_catalog = self.result_schema.split(".")[0]
+        if not target_catalog and self.cdm_schema and "." in self.cdm_schema:
+            target_catalog = self.cdm_schema.split(".")[0]
+
         if self.port is not None:
             params["port"] = self.port
-        if self.catalog is not None:
-            params["catalog"] = self.catalog
         if self.http_headers is not None:
             params["http_headers"] = self.http_headers
         if self.session_configuration is not None:
             params["session_configuration"] = self.session_configuration
+        if target_catalog is not None:
+            params["catalog"] = target_catalog
         return params
 
 
