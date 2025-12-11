@@ -22,6 +22,10 @@ def parse_args():
     )
     parser.add_argument("--cdm-schema", help="Name of the CDM schema (optional).")
     parser.add_argument("--vocab-schema", help="Name of the vocabulary schema (optional).")
+    parser.add_argument(
+        "--temp-schema",
+        help="Optional schema to emulate temp tables (useful for backends without true TEMP support).",
+    )
     parser.add_argument("--output", help="Optional file to write the generated SQL.")
     return parser.parse_args()
 
@@ -30,7 +34,11 @@ def main():
     args = parse_args()
     expression = CohortExpression.model_validate_json(Path(args.json).read_text())
     conn = ibis.duckdb.connect(args.cdm_db)
-    options = CohortBuildOptions(cdm_schema=args.cdm_schema, vocabulary_schema=args.vocab_schema)
+    options = CohortBuildOptions(
+        cdm_schema=args.cdm_schema,
+        vocabulary_schema=args.vocab_schema,
+        temp_emulation_schema=args.temp_schema,
+    )
     codeset_resource = compile_codesets(conn, expression.concept_sets, options)
     ctx = BuildContext(conn, options, codeset_resource)
 

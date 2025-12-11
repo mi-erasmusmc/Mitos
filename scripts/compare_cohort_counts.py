@@ -297,6 +297,7 @@ def run_python_pipeline(
     options = CohortBuildOptions(
         cdm_schema=cfg.cdm_schema,
         vocabulary_schema=cfg.vocab_schema,
+        temp_emulation_schema=cfg.temp_schema,
         capture_sql=cfg.capture_stages,
     )
 

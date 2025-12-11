@@ -288,7 +288,8 @@ def main():
                 result_schema=result_schema,
                 target_table=args.target_table,
                 cohort_id=args.cohort_id,
-                generate_stats=args.row_count
+                generate_stats=args.row_count,
+                temp_emulation_schema=temp_schema,
             )
             metrics = profile_expression(conn, expression, options, profile_path=ibis_plan_path)
         finally:
