@@ -200,7 +200,7 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
         print(f"Using profile: {profile_name}")
         active_config = profiles_obj.profiles[profile_name]
 
-        config_dict = active_config.model_dump(mode="json", by_alias=True)
+        config_dict = active_config.model_dump(mode="python", by_alias=True)
     else:
         config_dict = {"backend": args.backend or "duckdb"}
 
