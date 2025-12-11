@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+from mitos.build_context import BuildContext
+from mitos.tables import VisitOccurrence
+from mitos.builders.common import (
+    apply_age_filter,
+    apply_codeset_filter,
+    apply_concept_filters,
+    apply_concept_set_selection,
+    apply_date_range,
+    apply_first_event,
+    apply_gender_filter,
+    apply_numeric_range,
+    apply_provider_specialty_filter,
+    apply_visit_concept_filters,
+    project_event_columns,
+    standardize_output,
+)
+from mitos.builders.registry import register
+from mitos.builders.groups import apply_criteria_group
+
+
+@register("VisitOccurrence")
+def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
+    table = ctx.table("visit_occurrence")
+
+    concept_column = criteria.get_concept_id_column()
+    table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
+
+    table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
+    table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
+
+    table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
+    if criteria.visit_type_exclude:
+        table = apply_concept_filters(table, "visit_concept_id", criteria.visit_type, exclude=True)
+
+    table = apply_provider_specialty_filter(
+        table,
+        criteria.provider_specialty,
+        criteria.provider_specialty_cs,
+        ctx,
+    )
+    table = apply_concept_filters(table, "place_of_service_concept_id", criteria.place_of_service)
+    table = apply_concept_set_selection(table, "place_of_service_concept_id", criteria.place_of_service_cs, ctx)
+    if criteria.visit_length:
+        table = apply_numeric_range(table, "visit_length", criteria.visit_length)
+
+    if criteria.age:
+        table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
+    table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+
+    if criteria.visit_source_concept is not None:
+        table = table.filter(table.visit_source_concept_id == criteria.visit_source_concept)
+
+    if criteria.first:
+        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
+
+    table = project_event_columns(
+        table,
+        primary_key=criteria.get_primary_key_column(),
+        start_column=criteria.get_start_date_column(),
+        end_column=criteria.get_end_date_column(),
+        include_visit_occurrence=True,
+    )
+
+    events = standardize_output(
+        table,
+        primary_key=criteria.get_primary_key_column(),
+        start_column=criteria.get_start_date_column(),
+        end_column=criteria.get_end_date_column(),
+    )
+    return apply_criteria_group(events, criteria.correlated_criteria, ctx)
