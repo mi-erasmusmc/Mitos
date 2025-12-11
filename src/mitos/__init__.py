@@ -1,4 +1,26 @@
-from .cohort_expression import CohortExpression, PrimaryCriteria, ResultLimit, ObservationFilter
+import warnings
+
+try:
+    from ibis.backends.databricks import Backend as DatabricksBackend
+
+    def _no_op_post_connect(self, *args, **kwargs):
+        # Intentionally do nothing to skip volume creation.
+        # This effectively forces "read-only" mode regarding memtables
+        pass
+
+    DatabricksBackend._post_connect = _no_op_post_connect
+
+except ImportError:
+    pass
+except Exception as e:
+    warnings.warn(f"Mitos: Failed to patch Databricks backend: {e}")
+
+from .cohort_expression import (
+    CohortExpression,
+    PrimaryCriteria,
+    ResultLimit,
+    ObservationFilter,
+)
 from .concept_set import ConceptSet, ConceptSetExpression, ConceptSetItem
 from .criteria import (
     Criteria,
