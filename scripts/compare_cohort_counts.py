@@ -69,6 +69,8 @@ class BaseProfile(BaseModel):
     rscript_path: str | None = None
     circe_debug: bool = False
     cleanup_circe: bool = True
+    python_materialize_stages: bool = True
+    python_materialize_codesets: bool = True
 
     @model_validator(mode="after")
     def set_defaults(self) -> "BaseProfile":
@@ -244,6 +246,12 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
     if cli_args.pop("no_cleanup_circe", False):
         cli_args["cleanup_circe"] = False
 
+    if cli_args.pop("no_python_stages", False):
+        cli_args["python_materialize_stages"] = False
+
+    if cli_args.pop("inline_python_codesets", False):
+        cli_args["python_materialize_codesets"] = False
+
     merged_data = {**config_dict, **cli_args}
 
     try:
@@ -416,6 +424,8 @@ def run_python_pipeline(
         temp_emulation_schema=cfg.temp_schema,
         capture_sql=cfg.capture_stages,
         backend=cfg.backend,
+        materialize_stages=cfg.python_materialize_stages,
+        materialize_codesets=cfg.python_materialize_codesets,
     )
 
     compile_start = time.perf_counter()
@@ -729,6 +739,8 @@ def parse_args():
     parser.add_argument("--rscript-path")
     parser.add_argument("--circe-debug", action="store_true")
     parser.add_argument("--no-cleanup-circe", action="store_true")
+    parser.add_argument("--no-python-stages", action="store_true")
+    parser.add_argument("--inline-python-codesets", action="store_true")
     return parser.parse_args()
 
 

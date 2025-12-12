@@ -41,6 +41,8 @@ class CohortBuildOptions:
     profile_dir: Optional[str] = None
     capture_sql: bool = False
     backend: Optional[str] = None
+    materialize_stages: bool = True
+    materialize_codesets: bool = True
 
 
 @dataclass
@@ -187,6 +189,21 @@ class BuildContext:
         self.register_cleanup(_drop)
         return _table(self._conn, database, table_name)
 
+    def should_materialize_stages(self) -> bool:
+        return bool(self._options.materialize_stages)
+
+    def maybe_materialize(
+        self,
+        expr: ir.Table,
+        *,
+        label: str,
+        temp: bool = True,
+        analyze: bool = True,
+    ) -> ir.Table:
+        if not self.should_materialize_stages():
+            return expr
+        return self.materialize(expr, label=label, temp=temp, analyze=analyze)
+
     @property
     def codesets(self) -> ir.Table:
         return self._codesets
@@ -212,6 +229,8 @@ class BuildContext:
         label: str | None = None,
     ) -> ir.Table:
         """Materialize an expression once and reuse the resulting temp table for later lookups."""
+        if not self.should_materialize_stages():
+            return expr.view()
         cached = self._slice_cache.get(cache_key)
         if cached is not None:
             return cached
@@ -258,6 +277,9 @@ def compile_codesets(
         compiled_expr = _empty_codeset_table()
     else:
         compiled_expr = _union_all(compiled).distinct()
+
+    if not options.materialize_codesets:
+        return CodesetResource(table=compiled_expr)
 
     return _materialize_codesets(conn, compiled_expr, options)
 

@@ -41,9 +41,7 @@ OUTPUT_SCHEMA = {
 
 def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     def _maybe_materialize(table: ir.Table, label: str) -> ir.Table:
-        if ctx.options().capture_sql:
-            return ctx.materialize(table, label=label, analyze=True)
-        return table
+        return ctx.maybe_materialize(table, label=label, analyze=True)
 
     primary = expression.primary_criteria
     event_tables = [build_events(criteria, ctx) for criteria in primary.criteria_list]
@@ -58,29 +56,30 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     if _should_limit(primary.primary_limit):
         events = _apply_result_limit(events, primary.primary_limit)
 
-    events = ctx.materialize(events, label="primary_events", analyze=True)
+    events = ctx.maybe_materialize(events, label="primary_events", analyze=True)
 
     # Short-circuit the remainder of the pipeline when no primary events exist.
-    try:
-        primary_count = events.count().execute()
-    except Exception:
-        primary_count = None
-    if primary_count == 0:
-        events = _drop_aux_columns(events)
-        return events.limit(0)
+    if ctx.should_materialize_stages():
+        try:
+            primary_count = events.count().execute()
+        except Exception:
+            primary_count = None
+        if primary_count == 0:
+            events = _drop_aux_columns(events)
+            return events.limit(0)
 
     events = apply_criteria_group(events, expression.additional_criteria, ctx)
     if expression.additional_criteria:
-        events = ctx.materialize(events, label="additional_criteria", analyze=True)
+        events = ctx.maybe_materialize(events, label="additional_criteria", analyze=True)
 
     events = apply_inclusion_rules(events, expression.inclusion_rules, ctx)
     if expression.inclusion_rules:
-        events = ctx.materialize(events, label="inclusion", analyze=True)
+        events = ctx.maybe_materialize(events, label="inclusion", analyze=True)
     # Circe ignores QualifiedLimit, so we do the same to preserve parity.
 
     events = apply_censoring(events, expression.censoring_criteria, ctx)
     if expression.censoring_criteria:
-        events = ctx.materialize(events, label="censoring", analyze=True)
+        events = ctx.maybe_materialize(events, label="censoring", analyze=True)
     if _should_limit(expression.expression_limit):
         events = _apply_result_limit(events, expression.expression_limit)
     events = apply_end_strategy(events, expression.end_strategy, ctx)

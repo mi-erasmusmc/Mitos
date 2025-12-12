@@ -40,7 +40,7 @@ def apply_inclusion_rules(events: ir.Table, rules: list[InclusionRule], ctx: Bui
     for table in bit_hits[1:]:
         union_hits = union_hits.union(table, distinct=False)
 
-    union_hits = ctx.materialize(union_hits, label="inclusion_hits", analyze=True)
+    union_hits = ctx.maybe_materialize(union_hits, label="inclusion_hits", analyze=True)
 
     mask = union_hits.group_by(union_hits.person_id, union_hits.event_id).aggregate(
         _rule_mask=union_hits._rule_bit.sum()
