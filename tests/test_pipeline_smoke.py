@@ -11,11 +11,19 @@ from mitos.builders.pipeline import build_primary_events
 from mitos.cohort_expression import CohortExpression
 
 
-PHENOTYPE_SAMPLE = [
-    Path("cohorts/phenotypes/phenotype-2.json"),
-    Path("cohorts/phenotypes/phenotype-30.json"),
-    Path("cohorts/phenotypes/phenotype-78.json"),
-]
+def _resolve_phenotype_sample() -> list[Path]:
+    preferred = [
+        Path("cohorts/phenotypes/phenotype-2.json"),
+        Path("cohorts/phenotypes/phenotype-30.json"),
+        Path("cohorts/phenotypes/phenotype-78.json"),
+    ]
+    if all(path.exists() for path in preferred):
+        return preferred
+    candidates = sorted(Path("cohorts").glob("phenotype-*.json"))
+    return candidates[:3]
+
+
+PHENOTYPE_SAMPLE = _resolve_phenotype_sample()
 
 
 CDM_SCHEMAS = {

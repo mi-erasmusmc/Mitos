@@ -12,7 +12,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.compare_cohort_counts import (
+from scripts.compare_cohort_counts import (  # noqa: E402
+    ProfilesFile,
+    get_connection,
+    get_ohdsi_dialect,
+    load_yaml_with_env,
     execute_circe_sql,
     generate_circe_sql_via_r,
     run_python_pipeline,
@@ -20,37 +24,47 @@ from scripts.compare_cohort_counts import (
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Run all phenotype fixtures against DuckDB and capture row-count parity stats."
-    )
+    parser = argparse.ArgumentParser(description="Sweep phenotypes and compare row counts (python vs circe).")
+    parser.add_argument("--config", default="profiles.yaml")
+    parser.add_argument("--profile", required=True)
+
     parser.add_argument(
         "--phenotype-dir",
-        default="cohorts/phenotypes",
+        default="cohorts",
         help="Directory containing phenotype JSON files.",
     )
     parser.add_argument(
-        "--cdm-db",
-        default="duckyS_local.duckdb",
-        help="DuckDB database file with the OMOP CDM.",
+        "--pattern",
+        default="phenotype-*.json",
+        help="Glob pattern under phenotype-dir.",
     )
     parser.add_argument(
-        "--cdm-schema",
-        default="main",
-        help="CDM schema name within the DuckDB database.",
+        "--phenotypes",
+        nargs="*",
+        help="Optional explicit list of phenotype JSON filenames under phenotype-dir.",
     )
+
     parser.add_argument(
-        "--vocab-schema",
-        help="Vocabulary schema name (defaults to the CDM schema).",
+        "--target-table",
+        help="Writable cohort results table name (overrides profile).",
     )
     parser.add_argument(
         "--result-schema",
-        help="Schema that stores the Circe target cohort table (defaults to the CDM schema).",
+        help="Writable catalog.schema for cohort results (overrides profile).",
     )
     parser.add_argument(
-        "--target-table",
-        default="circe_cohort",
-        help="Writable cohort results table name.",
+        "--temp-schema",
+        help="Writable catalog.schema for Circe temp emulation (overrides profile).",
     )
+    parser.add_argument(
+        "--cdm-schema",
+        help="Readable catalog.schema for CDM (overrides profile).",
+    )
+    parser.add_argument(
+        "--vocab-schema",
+        help="Readable catalog.schema for vocab (overrides profile).",
+    )
+
     parser.add_argument(
         "--base-cohort-id",
         type=int,
@@ -63,93 +77,43 @@ def parse_args() -> argparse.Namespace:
         help="Path to write the summary JSON report.",
     )
     parser.add_argument(
-        "--duckdb-memory-limit",
-        help="Optional DuckDB memory limit (e.g., 24GB).",
-    )
-    parser.add_argument(
-        "--duckdb-threads",
-        type=int,
-        help="Optional DuckDB thread count override.",
-    )
-    parser.add_argument(
-        "--duckdb-preserve-insertion-order",
-        choices=["true", "false"],
-        help="Set DuckDB preserve_insertion_order.",
-    )
-    parser.add_argument(
-        "--duckdb-temp-dir",
-        help="Optional DuckDB temp_directory path for spills.",
-    )
-    parser.add_argument(
         "--only-mismatches-from",
-        help="When provided, only phenotypes marked as mismatches in the given report JSON are re-run.",
+        help="Only re-run phenotypes marked mismatched in a prior report JSON.",
     )
     parser.add_argument(
         "--skip-existing-from",
-        help="Skip phenotypes already present (any status) in the given report JSON file.",
+        help="Skip phenotypes already present (any status) in an existing report JSON.",
     )
+
+    # Defaults requested: no python staging, inline codesets
+    parser.add_argument("--python-stages", action="store_true", help="Enable python stage materialization.")
+    parser.add_argument("--python-materialize-codesets", action="store_true", help="Materialize codesets table.")
+    parser.add_argument("--circe-debug", action="store_true")
+    parser.add_argument("--no-cleanup-circe", action="store_true")
     return parser.parse_args()
 
 
-def build_duckdb_config(args: argparse.Namespace) -> dict[str, str] | None:
-    config: dict[str, str] = {}
-    if args.duckdb_memory_limit:
-        config["memory_limit"] = args.duckdb_memory_limit
-    if args.duckdb_threads:
-        config["threads"] = str(args.duckdb_threads)
-    if args.duckdb_preserve_insertion_order:
-        config["preserve_insertion_order"] = args.duckdb_preserve_insertion_order
-    if args.duckdb_temp_dir:
-        config["temp_directory"] = args.duckdb_temp_dir
-    return config or None
-
-
-def load_mismatch_paths(report_path: Path, phenotype_dir: Path) -> list[Path]:
+def load_paths_from_report(report_path: Path, phenotype_dir: Path, *, status: str | None) -> list[Path]:
     if not report_path.exists():
-        raise FileNotFoundError(f"Mismatch report not found: {report_path}")
+        raise FileNotFoundError(f"Report not found: {report_path}")
     with report_path.open() as f:
         records = json.load(f)
-    mismatch_paths: list[Path] = []
+    paths: list[Path] = []
     for record in records:
-        if record.get("status") != "mismatch":
+        if status is not None and record.get("status") != status:
             continue
         json_path = record.get("json_path")
         if not json_path:
             continue
         path = Path(json_path)
         if not path.is_absolute():
-            path = REPO_ROOT / path
-        path = path.resolve()
-        if not path.exists():
-            print(f"  Skipping missing mismatch path: {path}", flush=True)
-            continue
-        if phenotype_dir not in path.parents and path != phenotype_dir:
-            print(f"  Skipping mismatch outside phenotype dir: {path}", flush=True)
-            continue
-        mismatch_paths.append(path)
-    return sorted(set(mismatch_paths))
-
-
-def load_existing_paths(report_path: Path, phenotype_dir: Path) -> set[Path]:
-    if not report_path.exists():
-        raise FileNotFoundError(f"Existing report not found: {report_path}")
-    with report_path.open() as f:
-        records = json.load(f)
-    existing: set[Path] = set()
-    for record in records:
-        json_path = record.get("json_path")
-        if not json_path:
-            continue
-        path = Path(json_path)
-        if not path.is_absolute():
-            path = REPO_ROOT / path
-        path = path.resolve()
+            path = (REPO_ROOT / path).resolve()
         if not path.exists():
             continue
         if phenotype_dir not in path.parents and path != phenotype_dir:
             continue
-        existing.add(path)
-    return existing
+        paths.append(path)
+    return sorted(set(paths))
 
 
 def main() -> int:
@@ -158,125 +122,131 @@ def main() -> int:
     if not phenotype_dir.exists():
         print(f"Phenotype directory not found: {phenotype_dir}", file=sys.stderr)
         return 1
-    json_paths: list[Path]
+
+    raw = load_yaml_with_env(args.config)
+    profiles = ProfilesFile(**raw)
+    if args.profile not in profiles.profiles:
+        print(f"Profile '{args.profile}' not found in {args.config}", file=sys.stderr)
+        return 1
+    cfg = profiles.profiles[args.profile]
+    print(f"Using profile: {args.profile}")
+
     if args.only_mismatches_from:
-        mismatch_report = Path(args.only_mismatches_from)
-        try:
-            json_paths = load_mismatch_paths(mismatch_report, phenotype_dir)
-        except FileNotFoundError as exc:
-            print(str(exc), file=sys.stderr)
-            return 1
-        if not json_paths:
-            print(f"No mismatches found in {mismatch_report}; nothing to run.", file=sys.stderr)
-            return 0
+        json_paths = load_paths_from_report(Path(args.only_mismatches_from), phenotype_dir, status="mismatch")
+    elif args.phenotypes:
+        json_paths = [(phenotype_dir / name).resolve() for name in args.phenotypes]
     else:
-        json_paths = sorted(phenotype_dir.glob("*.json"))
+        json_paths = sorted(phenotype_dir.glob(args.pattern))
+
+    json_paths = [p for p in json_paths if p.exists()]
     if not json_paths:
-        print(f"No cohort JSON files found under {phenotype_dir}", file=sys.stderr)
+        print(f"No phenotype JSON files found under {phenotype_dir} (pattern={args.pattern})", file=sys.stderr)
         return 1
 
     if args.skip_existing_from:
-        existing_report = Path(args.skip_existing_from)
-        try:
-            existing_paths = load_existing_paths(existing_report, phenotype_dir)
-        except FileNotFoundError as exc:
-            print(str(exc), file=sys.stderr)
-            return 1
-        if existing_paths:
-            filtered = [path for path in json_paths if path.resolve() not in existing_paths]
-            skipped = len(json_paths) - len(filtered)
-            json_paths = filtered
-            if skipped:
-                print(f"Skipping {skipped} phenotype(s) already present in {existing_report}", flush=True)
+        existing_paths = set(load_paths_from_report(Path(args.skip_existing_from), phenotype_dir, status=None))
+        before = len(json_paths)
+        json_paths = [p for p in json_paths if p.resolve() not in existing_paths]
+        skipped = before - len(json_paths)
+        if skipped:
+            print(f"Skipping {skipped} phenotype(s) already present in {args.skip_existing_from}", flush=True)
         if not json_paths:
             print("All phenotypes were already present in the existing report; nothing to run.", flush=True)
             return 0
 
-    duckdb_config = build_duckdb_config(args)
-    vocab_schema = args.vocab_schema or args.cdm_schema
-    result_schema = args.result_schema or args.cdm_schema
+    # Apply global overrides once; per-phenotype settings are applied via model_copy below.
+    overrides: dict[str, Any] = {}
+    if args.target_table:
+        overrides["cohort_table"] = args.target_table
+    if args.result_schema:
+        overrides["result_schema"] = args.result_schema
+    if args.temp_schema:
+        overrides["temp_schema"] = args.temp_schema
+    if args.cdm_schema:
+        overrides["cdm_schema"] = args.cdm_schema
+    if args.vocab_schema:
+        overrides["vocab_schema"] = args.vocab_schema
+    if args.circe_debug:
+        overrides["circe_debug"] = True
+    if args.no_cleanup_circe:
+        overrides["cleanup_circe"] = False
+
+    # Defaults requested: no python staging and inline codesets unless explicitly enabled.
+    overrides["python_materialize_stages"] = bool(args.python_stages)
+    overrides["python_materialize_codesets"] = bool(args.python_materialize_codesets)
+
+    cfg = cfg.model_copy(update=overrides)
+
+    con = get_connection(cfg)
+    dialect = get_ohdsi_dialect(con)
+    print(f"Dialect: {dialect} | Backend: {cfg.backend}")
 
     summary: list[dict[str, Any]] = []
     mismatches = 0
     failures = 0
-
     total = len(json_paths)
-    for idx, json_path in enumerate(json_paths, start=1):
-        label = json_path.stem
-        cohort_id = args.base_cohort_id + idx
-        print(f"[{idx}/{total}] {label} (cohort_id={cohort_id}) ...", flush=True)
-        record: dict[str, Any] = {
-            "phenotype": label,
-            "json_path": str(json_path),
-            "cohort_id": cohort_id,
-        }
 
-        python_count = None
-        circe_count = None
+    try:
+        for idx, json_path in enumerate(json_paths, start=1):
+            label = json_path.stem
+            cohort_id = args.base_cohort_id + idx
+            print(f"[{idx}/{total}] {label} (cohort_id={cohort_id}) ...", flush=True)
 
-        try:
-            _, python_count, python_metrics, _ = run_python_pipeline(
-                json_path=json_path,
-                db_path=args.cdm_db,
-                cdm_schema=args.cdm_schema,
-                vocab_schema=vocab_schema,
-                duckdb_config=dict(duckdb_config) if duckdb_config else None,
-                capture_stages=False,
-            )
-            record["python_rows"] = python_count
-            record["python_total_ms"] = python_metrics.get("total_ms")
-        except Exception as exc:
-            failures += 1
-            record["python_error"] = str(exc)
-            print(f"  Python pipeline failed: {exc}", flush=True)
-        else:
-            python_count = int(python_count)
+            per = cfg.model_copy(update={"json_path": json_path, "cohort_id": cohort_id})
+            # Ensure Circe temp emulation defaults to result_schema if not set.
+            if getattr(per, "temp_schema", None) is None:
+                per = per.model_copy(update={"temp_schema": per.result_schema})
 
-        try:
-            circe_sql, circe_generate_ms = generate_circe_sql_via_r(
-                json_path=json_path,
-                cdm_schema=args.cdm_schema,
-                vocab_schema=vocab_schema,
-                result_schema=result_schema,
-                target_schema=result_schema,
-                target_table=args.target_table,
-                cohort_id=cohort_id,
-                temp_schema=result_schema,
-            )
-            circe_count, circe_exec_metrics = execute_circe_sql(
-                sql=circe_sql,
-                db_path=args.cdm_db,
-                result_schema=result_schema,
-                target_table=args.target_table,
-                cohort_id=cohort_id,
-                temp_schema=result_schema,
-                duckdb_config=dict(duckdb_config) if duckdb_config else None,
-            )
-            record["circe_rows"] = circe_count
-            record["circe_generate_ms"] = circe_generate_ms
-            record["circe_sql_exec_ms"] = circe_exec_metrics.get("sql_exec_ms")
-            record["circe_count_query_ms"] = circe_exec_metrics.get("count_query_ms")
-            record["circe_total_ms"] = circe_generate_ms + circe_exec_metrics.get("sql_exec_ms", 0.0)
-        except Exception as exc:
-            failures += 1
-            record["circe_error"] = str(exc)
-            print(f"  Circe pipeline failed: {exc}", flush=True)
-        else:
-            circe_count = int(circe_count)
+            record: dict[str, Any] = {
+                "phenotype": label,
+                "json_path": str(json_path),
+                "cohort_id": cohort_id,
+            }
 
-        if python_count is not None and circe_count is not None:
-            diff = python_count - circe_count
-            record["row_diff"] = diff
-            record["status"] = "match" if diff == 0 else "mismatch"
-            if diff != 0:
-                mismatches += 1
-                print(f"  Row mismatch: python={python_count} circe={circe_count} (diff={diff})", flush=True)
+            python_count = None
+            circe_count = None
+
+            try:
+                _, python_count, python_metrics, _ = run_python_pipeline(con, per)
+                record["python_rows"] = int(python_count)
+                record["python_total_ms"] = python_metrics.get("total_ms")
+            except Exception as exc:
+                failures += 1
+                record["python_error"] = str(exc)
+                print(f"  Python pipeline failed: {exc}", flush=True)
+
+            try:
+                circe_sql, circe_generate_ms = generate_circe_sql_via_r(per, dialect)
+                circe_count, circe_exec_metrics = execute_circe_sql(con, per, circe_sql)
+                record["circe_rows"] = int(circe_count)
+                record["circe_generate_ms"] = circe_generate_ms
+                record["circe_sql_exec_ms"] = circe_exec_metrics.get("sql_exec_ms")
+                record["circe_count_query_ms"] = circe_exec_metrics.get("count_query_ms")
+                record["circe_total_ms"] = circe_generate_ms + circe_exec_metrics.get("sql_exec_ms", 0.0)
+            except Exception as exc:
+                failures += 1
+                record["circe_error"] = str(exc)
+                print(f"  Circe pipeline failed: {exc}", flush=True)
+
+            if record.get("python_rows") is not None and record.get("circe_rows") is not None:
+                diff = int(record["python_rows"]) - int(record["circe_rows"])
+                record["row_diff"] = diff
+                record["status"] = "match" if diff == 0 else "mismatch"
+                if diff != 0:
+                    mismatches += 1
+                    print(
+                        f"  Row mismatch: python={record['python_rows']} circe={record['circe_rows']} (diff={diff})",
+                        flush=True,
+                    )
+                else:
+                    print(f"  Row match: {record['python_rows']}", flush=True)
             else:
-                print(f"  Row match: {python_count}", flush=True)
-        else:
-            record["status"] = "error"
+                record["status"] = "error"
 
-        summary.append(record)
+            summary.append(record)
+    finally:
+        if hasattr(con, "close"):
+            con.close()
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(summary, indent=2))
@@ -291,3 +261,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
