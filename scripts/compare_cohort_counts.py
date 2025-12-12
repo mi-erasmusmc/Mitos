@@ -235,10 +235,13 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
     else:
         config_dict = {"backend": args.backend or "duckdb"}
 
-    meta_keys = {"config", "profile"}
+    meta_keys = {"config", "profile", "explain_dir"}
     cli_args = {
         k: v for k, v in vars(args).items() if v is not None and k not in meta_keys
     }
+
+    if cli_args.get("json"):
+        cli_args["json_path"] = Path(cli_args.pop("json"))
 
     if cli_args.get("cdm_db"):
         cli_args["database"] = cli_args.pop("cdm_db")
