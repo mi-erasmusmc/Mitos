@@ -107,6 +107,7 @@ class DatabricksProfile(BaseProfile):
     access_token: SecretStr
     port: int | None = None
     catalog: str | None = None
+    schema: str | None = None
     http_headers: dict[str, str] | None = None
     session_configuration: dict[str, str] | None = None
 
@@ -121,6 +122,22 @@ class DatabricksProfile(BaseProfile):
         return self
 
     def get_ibis_connection_params(self) -> dict[str, Any]:
+        def _split_catalog_schema(value: str) -> tuple[str | None, str | None]:
+            value = value.strip()
+            if not value:
+                return None, None
+            if "." not in value:
+                return None, value
+            catalog, schema = value.split(".", 1)
+            return catalog or None, schema or None
+
+        # Databricks connections need a usable "current" catalog/schema.
+        # Prefer the writable destination (result_schema) when present, otherwise
+        # fall back to cdm_schema.
+        default_catalog, default_schema = _split_catalog_schema(
+            (self.result_schema or self.cdm_schema or "").strip()
+        )
+
         params = {
             "server_hostname": self.server_hostname,
             "http_path": self.http_path,
@@ -133,8 +150,13 @@ class DatabricksProfile(BaseProfile):
             params["http_headers"] = self.http_headers
         if self.session_configuration is not None:
             params["session_configuration"] = self.session_configuration
-        if self.catalog is not None:
-            params["catalog"] = self.catalog
+        # Allow explicit override, otherwise use derived defaults.
+        catalog = self.catalog or default_catalog
+        schema = self.schema or default_schema
+        if catalog is not None:
+            params["catalog"] = catalog
+        if schema is not None:
+            params["schema"] = schema
         return params
 
 
