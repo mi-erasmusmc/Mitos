@@ -69,8 +69,9 @@ class BaseProfile(BaseModel):
     rscript_path: str | None = None
     circe_debug: bool = False
     cleanup_circe: bool = True
-    python_materialize_stages: bool = True
-    python_materialize_codesets: bool = True
+    # Prefer lazy (non-materialized) expressions by default for portability/perf.
+    python_materialize_stages: bool = False
+    python_materialize_codesets: bool = False
 
     @model_validator(mode="after")
     def set_defaults(self) -> "BaseProfile":
@@ -78,6 +79,8 @@ class BaseProfile(BaseModel):
             self.vocab_schema = self.cdm_schema
         if self.python_stage_dir or self.debug_prefix:
             self.capture_stages = True
+            # If the user wants stage output, we must materialize stages.
+            self.python_materialize_stages = True
         return self
 
     def get_ibis_connection_params(self) -> dict[str, Any]:
@@ -255,6 +258,12 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
     if cli_args.pop("inline_python_codesets", False):
         cli_args["python_materialize_codesets"] = False
 
+    if cli_args.pop("python_stages", False):
+        cli_args["python_materialize_stages"] = True
+
+    if cli_args.pop("python_materialize_codesets", False):
+        cli_args["python_materialize_codesets"] = True
+
     merged_data = {**config_dict, **cli_args}
 
     try:
@@ -369,6 +378,60 @@ def explain_formatted(con: IbisConnection, sql: str) -> str:
         else:
             parts.append(str(row))
     return "\n".join(parts).strip()
+
+def _qualify_databricks_schema_parts(schema: str) -> tuple[str | None, str]:
+    parts = schema.split(".", 1)
+    if len(parts) == 1:
+        return None, parts[0]
+    return parts[0], parts[1]
+
+
+def _set_databricks_current_schema(con: IbisConnection, schema: str) -> None:
+    catalog, sch = _qualify_databricks_schema_parts(schema)
+    if catalog:
+        _exec_raw(con, f"USE CATALOG {quote_ident_for_backend(catalog, 'databricks')}")
+    _exec_raw(con, f"USE SCHEMA {quote_ident_for_backend(sch, 'databricks')}")
+
+
+def _rewrite_circe_temp_table_qualification(
+    sql_script: str,
+    *,
+    temp_schema: str,
+    backend: str,
+) -> str:
+    """
+    Circe-generated temp table names are typically unqualified. On Databricks the session
+    schema may not be stable across statements/cursors; qualify temp tables to a known schema.
+    """
+    statements = _split_sql_statements(sql_script)
+    temp_tables: set[str] = set()
+
+    for stmt in statements:
+        m = re.match(
+            r"(?is)\s*create\s+table\s+(?:if\s+not\s+exists\s+)?([A-Za-z0-9_]+)\b",
+            stmt,
+        )
+        if m:
+            name = m.group(1)
+            if "." not in name:
+                temp_tables.add(name)
+
+    if not temp_tables:
+        return sql_script
+
+    out: list[str] = []
+    for stmt in statements:
+        rewritten = stmt
+        for name in sorted(temp_tables, key=len, reverse=True):
+            qualified = qualify_identifier_for_backend(name, temp_schema, backend)
+            # Replace only unqualified identifier occurrences (avoid already-qualified).
+            rewritten = re.sub(
+                rf"(?<![\w.]){re.escape(name)}(?![\w])",
+                qualified,
+                rewritten,
+            )
+        out.append(rewritten)
+    return ";\n".join(out)
 
 
 def _extract_circe_select_for_explain(sql_script: str) -> str | None:
@@ -500,22 +563,18 @@ def run_python_pipeline(
         final_exec_ms = (time.perf_counter() - count_start) * 1000
 
         if cfg.capture_stages:
+            want_row_counts = bool(cfg.python_stage_dir)
             for idx, (table_name, statement) in enumerate(ctx.captured_sql(), start=1):
-                stage_db = cfg.temp_schema
-                stage_tbl = (
-                    con.table(table_name, database=stage_db)
-                    if stage_db
-                    else con.table(table_name)
-                )
-                row_count = int(stage_tbl.count().execute())
-                stage_details.append(
-                    {
-                        "index": idx,
-                        "table": table_name,
-                        "row_count": row_count,
-                        "sql": statement,
-                    }
-                )
+                stage: dict[str, object] = {"index": idx, "table": table_name, "sql": statement}
+                if want_row_counts:
+                    stage_db = cfg.temp_schema
+                    stage_tbl = (
+                        con.table(table_name, database=stage_db)
+                        if stage_db
+                        else con.table(table_name)
+                    )
+                    stage["row_count"] = int(stage_tbl.count().execute())
+                stage_details.append(stage)
     finally:
         if cfg.capture_stages and cfg.debug_prefix and stage_details:
             for stage in stage_details:
@@ -705,6 +764,18 @@ def execute_circe_sql(
             ) from e
         print(f"Warning: Target table ensure failed: {e}", file=sys.stderr)
 
+    if cfg.backend == "databricks":
+        # Circe temp tables are often unqualified; make resolution robust.
+        if cfg.temp_schema:
+            _set_databricks_current_schema(con, cfg.temp_schema)
+            sql = _rewrite_circe_temp_table_qualification(
+                sql,
+                temp_schema=cfg.temp_schema,
+                backend=cfg.backend,
+            )
+        elif cfg.result_schema:
+            _set_databricks_current_schema(con, cfg.result_schema)
+
     statements = _split_sql_statements(sql)
     sql_start = time.perf_counter()
     for idx, stmt in enumerate(statements, start=1):
@@ -812,7 +883,9 @@ def parse_args():
     parser.add_argument("--circe-debug", action="store_true")
     parser.add_argument("--no-cleanup-circe", action="store_true")
     parser.add_argument("--no-python-stages", action="store_true")
+    parser.add_argument("--python-stages", action="store_true", help="Enable python stage materialization.")
     parser.add_argument("--inline-python-codesets", action="store_true")
+    parser.add_argument("--python-materialize-codesets", action="store_true", help="Materialize codesets table.")
     parser.add_argument(
         "--explain-dir",
         help="If set, write EXPLAIN FORMATTED output for python/circe into this directory.",
@@ -838,8 +911,13 @@ def main():
         print(f"CDM: {cfg.cdm_schema}")
 
         # 3. PYTHON PIPELINE
+        py_cfg = cfg
+        if args.explain_dir and cfg.python_materialize_stages and not cfg.capture_stages:
+            # Enable stage SQL capture for explains without requiring python-stage-dir/debug-prefix.
+            py_cfg = cfg.model_copy(update={"capture_stages": True})
+
         py_sql, py_count, py_metrics, py_stages, py_ctx = run_python_pipeline(
-            con, cfg, keep_context_open=bool(args.explain_dir)
+            con, py_cfg, keep_context_open=bool(args.explain_dir)
         )
         if cfg.python_sql_out:
             cfg.python_sql_out.write_text(py_sql)
@@ -851,6 +929,17 @@ def main():
                 (explain_dir / "python_explain.txt").write_text(explain_text)
             except Exception as e:
                 print(f"Warning: failed to explain python SQL: {e}", file=sys.stderr)
+            if py_ctx is not None:
+                try:
+                    for idx, (table_name, statement) in enumerate(py_ctx.captured_sql(), start=1):
+                        safe_name = re.sub(r"[^A-Za-z0-9_]+", "_", table_name).strip("_")
+                        path = explain_dir / f"python_stage_{idx:02d}_{safe_name}.txt"
+                        try:
+                            path.write_text(explain_formatted(con, statement))
+                        except Exception as e:
+                            print(f"Warning: failed to explain python stage {table_name}: {e}", file=sys.stderr)
+                except Exception as e:
+                    print(f"Warning: failed to collect python stage SQL for explain: {e}", file=sys.stderr)
         if cfg.python_stage_dir and py_stages:
             cfg.python_stage_dir.mkdir(parents=True, exist_ok=True)
             # Stage saving logic omitted for brevity
