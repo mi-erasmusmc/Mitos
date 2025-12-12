@@ -17,4 +17,3 @@ def test_extract_circe_select_falls_back_to_final_cohort():
     sql = "CREATE TABLE abcdef12final_cohort USING DELTA AS SELECT 2 AS y;"
     out = _extract_circe_select_for_explain(sql)
     assert out == "SELECT 2 AS y"
-

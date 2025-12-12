@@ -213,7 +213,9 @@ def main() -> int:
             circe_count = None
 
             try:
-                py_sql, python_count, python_metrics, _ = run_python_pipeline(con, per)
+                py_sql, python_count, python_metrics, _, py_ctx = run_python_pipeline(
+                    con, per, keep_context_open=bool(explain_dir)
+                )
                 record["python_rows"] = int(python_count)
                 record["python_total_ms"] = python_metrics.get("total_ms")
                 if explain_dir is not None:
@@ -223,6 +225,9 @@ def main() -> int:
                         )
                     except Exception as exc:
                         record["python_explain_error"] = str(exc)
+                    finally:
+                        if py_ctx is not None:
+                            py_ctx.close()
             except Exception as exc:
                 failures += 1
                 record["python_error"] = str(exc)
@@ -230,18 +235,13 @@ def main() -> int:
 
             try:
                 circe_sql, circe_generate_ms = generate_circe_sql_via_r(per, dialect)
-                if explain_dir is not None:
-                    try:
-                        from scripts.compare_cohort_counts import _extract_circe_select_for_explain
-
-                        select_sql = _extract_circe_select_for_explain(circe_sql)
-                        if select_sql:
-                            (explain_dir / f"{label}_circe_explain.txt").write_text(
-                                explain_formatted(con, select_sql)
-                            )
-                    except Exception as exc:
-                        record["circe_explain_error"] = str(exc)
-                circe_count, circe_exec_metrics = execute_circe_sql(con, per, circe_sql)
+                circe_count, circe_exec_metrics = execute_circe_sql(
+                    con,
+                    per,
+                    circe_sql,
+                    explain_dir=explain_dir,
+                    explain_prefix=f"{label}_",
+                )
                 record["circe_rows"] = int(circe_count)
                 record["circe_generate_ms"] = circe_generate_ms
                 record["circe_sql_exec_ms"] = circe_exec_metrics.get("sql_exec_ms")

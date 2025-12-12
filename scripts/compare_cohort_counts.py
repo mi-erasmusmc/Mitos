@@ -460,8 +460,9 @@ def _split_sql_statements(sql_script: str) -> list[str]:
 def run_python_pipeline(
     con: IbisConnection,
     cfg: AnyProfile,
-
-) -> tuple[str, int, dict[str, float], list[dict]]:
+    *,
+    keep_context_open: bool = False,
+) -> tuple[str, int, dict[str, float], list[dict], BuildContext | None]:
     expression = CohortExpression.model_validate_json(cfg.json_path.read_text())
 
     options = CohortBuildOptions(
@@ -533,7 +534,8 @@ def run_python_pipeline(
                         f"Warning: Failed to save debug table {target}: {e}",
                         file=sys.stderr,
                     )
-        ctx.close()
+        if not keep_context_open:
+            ctx.close()
 
     metrics = {
         "codeset_exec_ms": codeset_exec_ms,
@@ -542,7 +544,7 @@ def run_python_pipeline(
         "final_exec_ms": final_exec_ms,
         "total_ms": codeset_exec_ms + build_exec_ms + compile_sql_ms + final_exec_ms,
     }
-    return str(sql), count, metrics, stage_details
+    return str(sql), count, metrics, stage_details, (ctx if keep_context_open else None)
 
 
 def generate_circe_sql_via_r(
@@ -666,6 +668,9 @@ def execute_circe_sql(
     con: IbisConnection,
     cfg: AnyProfile,
     sql: str,
+    *,
+    explain_dir: Path | None = None,
+    explain_prefix: str = "",
 ) -> tuple[int, dict[str, float]]:
     target_schema = cfg.result_schema or cfg.cdm_schema
     qualified_table = qualify_identifier_for_backend(
@@ -708,6 +713,27 @@ def execute_circe_sql(
         if cfg.circe_debug:
             preview = " ".join(stmt.strip().split())[:160]
             print(f"[Circe SQL {idx}/{len(statements)}] {preview}")
+
+        if explain_dir is not None:
+            normalized = " ".join(stmt.strip().split()).lower()
+            is_ctas = normalized.startswith("create table ")
+            if is_ctas and any(s in normalized for s in ("qualified_events", "final_cohort", "cohort_rows")):
+                m = re.search(r"\bAS\b", stmt, flags=re.IGNORECASE)
+                if m:
+                    select_part = stmt[m.end() :].strip()
+                    if select_part.lower().startswith("select"):
+                        try:
+                            label = "circe"
+                            if "qualified_events" in normalized:
+                                label = "circe_qualified_events"
+                            elif "final_cohort" in normalized:
+                                label = "circe_final_cohort"
+                            elif "cohort_rows" in normalized:
+                                label = "circe_cohort_rows"
+                            path = explain_dir / f"{explain_prefix}{label}.txt"
+                            path.write_text(explain_formatted(con, select_part))
+                        except Exception as e:
+                            print(f"Warning: failed to explain circe CTAS ({idx}): {e}", file=sys.stderr)
         try:
             _exec_raw(con, stmt)
         except Exception as e:
@@ -812,7 +838,9 @@ def main():
         print(f"CDM: {cfg.cdm_schema}")
 
         # 3. PYTHON PIPELINE
-        py_sql, py_count, py_metrics, py_stages = run_python_pipeline(con, cfg)
+        py_sql, py_count, py_metrics, py_stages, py_ctx = run_python_pipeline(
+            con, cfg, keep_context_open=bool(args.explain_dir)
+        )
         if cfg.python_sql_out:
             cfg.python_sql_out.write_text(py_sql)
         if args.explain_dir:
@@ -838,20 +866,19 @@ def main():
         circe_sql, circe_gen_ms = generate_circe_sql_via_r(cfg, dialect)
         if cfg.circe_sql_out:
             cfg.circe_sql_out.write_text(circe_sql)
-        if args.explain_dir:
-            explain_dir = Path(args.explain_dir)
+        explain_dir = Path(args.explain_dir) if args.explain_dir else None
+        if explain_dir is not None:
             explain_dir.mkdir(parents=True, exist_ok=True)
-            select_sql = _extract_circe_select_for_explain(circe_sql)
-            if select_sql:
-                try:
-                    explain_text = explain_formatted(con, select_sql)
-                    (explain_dir / "circe_explain.txt").write_text(explain_text)
-                except Exception as e:
-                    print(f"Warning: failed to explain circe SQL: {e}", file=sys.stderr)
-            else:
-                print("Warning: could not extract circe SELECT for EXPLAIN", file=sys.stderr)
 
-        circe_count, circe_metrics = execute_circe_sql(con, cfg, circe_sql)
+        circe_count, circe_metrics = execute_circe_sql(
+            con,
+            cfg,
+            circe_sql,
+            explain_dir=explain_dir,
+        )
+
+        if py_ctx is not None:
+            py_ctx.close()
 
         # 5. REPORT
         print("-" * 60)
