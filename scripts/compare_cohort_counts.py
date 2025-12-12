@@ -349,6 +349,49 @@ def _fetch_scalar(con: IbisConnection, sql: str):
             pass
 
 
+def explain_formatted(con: IbisConnection, sql: str) -> str:
+    trimmed = sql.strip().rstrip(";")
+    cur = con.raw_sql(f"EXPLAIN FORMATTED {trimmed}")
+    try:
+        rows = cur.fetchall()
+    finally:
+        try:
+            cur.close()
+        except Exception:
+            pass
+    parts: list[str] = []
+    for row in rows or []:
+        if isinstance(row, tuple):
+            parts.append("\t".join("" if v is None else str(v) for v in row))
+        else:
+            parts.append(str(row))
+    return "\n".join(parts).strip()
+
+
+def _extract_circe_select_for_explain(sql_script: str) -> str | None:
+    """
+    Heuristic: pick the heaviest CTAS step and extract its SELECT for EXPLAIN.
+    Prefer qualified_events, then final_cohort, then cohort_rows.
+    """
+    statements = _split_sql_statements(sql_script)
+    targets = ("qualified_events", "final_cohort", "cohort_rows")
+    for suffix in targets:
+        for stmt in statements:
+            normalized = " ".join(stmt.strip().split())
+            if not normalized.lower().startswith("create table "):
+                continue
+            if suffix.lower() not in normalized.lower():
+                continue
+            # Look for "... AS <select>"
+            m = re.search(r"\bAS\b", stmt, flags=re.IGNORECASE)
+            if not m:
+                continue
+            select_part = stmt[m.end() :].strip()
+            if select_part.lower().startswith("select"):
+                return select_part
+    return None
+
+
 def _split_sql_statements(sql_script: str) -> list[str]:
     statements: list[str] = []
     current: list[str] = []
@@ -741,6 +784,10 @@ def parse_args():
     parser.add_argument("--no-cleanup-circe", action="store_true")
     parser.add_argument("--no-python-stages", action="store_true")
     parser.add_argument("--inline-python-codesets", action="store_true")
+    parser.add_argument(
+        "--explain-dir",
+        help="If set, write EXPLAIN FORMATTED output for python/circe into this directory.",
+    )
     return parser.parse_args()
 
 
@@ -765,6 +812,14 @@ def main():
         py_sql, py_count, py_metrics, py_stages = run_python_pipeline(con, cfg)
         if cfg.python_sql_out:
             cfg.python_sql_out.write_text(py_sql)
+        if args.explain_dir:
+            explain_dir = Path(args.explain_dir)
+            explain_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                explain_text = explain_formatted(con, py_sql)
+                (explain_dir / "python_explain.txt").write_text(explain_text)
+            except Exception as e:
+                print(f"Warning: failed to explain python SQL: {e}", file=sys.stderr)
         if cfg.python_stage_dir and py_stages:
             cfg.python_stage_dir.mkdir(parents=True, exist_ok=True)
             # Stage saving logic omitted for brevity
@@ -780,6 +835,18 @@ def main():
         circe_sql, circe_gen_ms = generate_circe_sql_via_r(cfg, dialect)
         if cfg.circe_sql_out:
             cfg.circe_sql_out.write_text(circe_sql)
+        if args.explain_dir:
+            explain_dir = Path(args.explain_dir)
+            explain_dir.mkdir(parents=True, exist_ok=True)
+            select_sql = _extract_circe_select_for_explain(circe_sql)
+            if select_sql:
+                try:
+                    explain_text = explain_formatted(con, select_sql)
+                    (explain_dir / "circe_explain.txt").write_text(explain_text)
+                except Exception as e:
+                    print(f"Warning: failed to explain circe SQL: {e}", file=sys.stderr)
+            else:
+                print("Warning: could not extract circe SELECT for EXPLAIN", file=sys.stderr)
 
         circe_count, circe_metrics = execute_circe_sql(con, cfg, circe_sql)
 

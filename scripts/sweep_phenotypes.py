@@ -18,6 +18,7 @@ from scripts.compare_cohort_counts import (  # noqa: E402
     get_ohdsi_dialect,
     load_yaml_with_env,
     execute_circe_sql,
+    explain_formatted,
     generate_circe_sql_via_r,
     run_python_pipeline,
 )
@@ -90,6 +91,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--python-materialize-codesets", action="store_true", help="Materialize codesets table.")
     parser.add_argument("--circe-debug", action="store_true")
     parser.add_argument("--no-cleanup-circe", action="store_true")
+    parser.add_argument("--explain-dir", help="Write EXPLAIN FORMATTED outputs per phenotype.")
     return parser.parse_args()
 
 
@@ -185,6 +187,10 @@ def main() -> int:
     mismatches = 0
     failures = 0
     total = len(json_paths)
+    explain_dir: Path | None = None
+    if args.explain_dir:
+        explain_dir = Path(args.explain_dir)
+        explain_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         for idx, json_path in enumerate(json_paths, start=1):
@@ -207,9 +213,16 @@ def main() -> int:
             circe_count = None
 
             try:
-                _, python_count, python_metrics, _ = run_python_pipeline(con, per)
+                py_sql, python_count, python_metrics, _ = run_python_pipeline(con, per)
                 record["python_rows"] = int(python_count)
                 record["python_total_ms"] = python_metrics.get("total_ms")
+                if explain_dir is not None:
+                    try:
+                        (explain_dir / f"{label}_python_explain.txt").write_text(
+                            explain_formatted(con, py_sql)
+                        )
+                    except Exception as exc:
+                        record["python_explain_error"] = str(exc)
             except Exception as exc:
                 failures += 1
                 record["python_error"] = str(exc)
@@ -217,6 +230,17 @@ def main() -> int:
 
             try:
                 circe_sql, circe_generate_ms = generate_circe_sql_via_r(per, dialect)
+                if explain_dir is not None:
+                    try:
+                        from scripts.compare_cohort_counts import _extract_circe_select_for_explain
+
+                        select_sql = _extract_circe_select_for_explain(circe_sql)
+                        if select_sql:
+                            (explain_dir / f"{label}_circe_explain.txt").write_text(
+                                explain_formatted(con, select_sql)
+                            )
+                    except Exception as exc:
+                        record["circe_explain_error"] = str(exc)
                 circe_count, circe_exec_metrics = execute_circe_sql(con, per, circe_sql)
                 record["circe_rows"] = int(circe_count)
                 record["circe_generate_ms"] = circe_generate_ms
@@ -261,4 +285,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
