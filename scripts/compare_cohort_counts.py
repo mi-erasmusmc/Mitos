@@ -239,10 +239,22 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
     else:
         config_dict = {"backend": args.backend or "duckdb"}
 
-    meta_keys = {"config", "profile", "explain_dir", "diff", "diff_limit"}
+    meta_keys = {
+        "config",
+        "profile",
+        "explain_dir",
+        "diff",
+        "diff_limit",
+        "trace_stages",
+        "trace_subject_limit",
+    }
     cli_args = {
         k: v for k, v in vars(args).items() if v is not None and k not in meta_keys
     }
+
+    # Backwards/CLI-friendly flag names that map to profile fields.
+    if cli_args.get("python_debug_prefix") is not None:
+        cli_args["debug_prefix"] = cli_args.pop("python_debug_prefix")
 
     if cli_args.get("json"):
         cli_args["json_path"] = Path(cli_args.pop("json"))
@@ -329,6 +341,24 @@ def qualify_identifier_for_backend(name: str, schema: str | None, backend: str) 
 def wrap_count_query(sql: str) -> str:
     trimmed = sql.strip().rstrip(";")
     return f"SELECT COUNT(*) AS row_count FROM ({trimmed}) as cohort_rows"
+
+def _sql_count(con: IbisConnection, qualified: str) -> int:
+    return int(_fetch_scalar(con, f"SELECT COUNT(*) FROM {qualified}"))
+
+
+def _sql_count_for_ids(
+    con: IbisConnection,
+    qualified: str,
+    *,
+    id_column: str,
+    ids: list[int],
+) -> int:
+    if not ids:
+        return 0
+    id_list = ", ".join(str(int(v)) for v in ids)
+    return int(
+        _fetch_scalar(con, f"SELECT COUNT(*) FROM {qualified} WHERE {id_column} IN ({id_list})")
+    )
 
 def _exec_raw(con: IbisConnection, sql: str) -> None:
     """
@@ -780,7 +810,8 @@ def execute_circe_sql(
     *,
     explain_dir: Path | None = None,
     explain_prefix: str = "",
-) -> tuple[int, dict[str, float]]:
+    preserve_temp_tables: bool = False,
+) -> tuple[int, dict[str, Any]]:
     target_schema = cfg.result_schema or cfg.cdm_schema
     qualified_table = qualify_identifier_for_backend(
         cfg.cohort_table, target_schema, cfg.backend
@@ -826,10 +857,53 @@ def execute_circe_sql(
         elif cfg.result_schema:
             _set_databricks_current_schema(con, cfg.result_schema)
 
+    circe_stage_tables: dict[str, str] = {}
+
+    def _maybe_record_stage_table(stmt: str) -> None:
+        # Handle statements that may include leading comments before the CREATE.
+        m = re.search(
+            r"\bcreate\s+(?:temp\s+)?table\s+(?:if\s+not\s+exists\s+)?([^\s(]+)",
+            stmt,
+            flags=re.IGNORECASE,
+        )
+        if not m:
+            return
+        name = m.group(1).strip().rstrip(";")
+        lowered = name.lower()
+        for label in (
+            "codesets",
+            "qualified_events",
+            "inclusion_events",
+            "included_events",
+            "strategy_ends",
+            "cohort_rows",
+            "final_cohort",
+        ):
+            if label in lowered:
+                circe_stage_tables[label] = name
+                return
+
+    def _should_skip_stmt(stmt: str) -> bool:
+        if not preserve_temp_tables:
+            return False
+        normalized = " ".join(stmt.strip().split()).lower()
+        if normalized.startswith("drop table ") or normalized.startswith("truncate table "):
+            return True
+        if normalized.startswith("delete from "):
+            # Keep deletes against the target cohort table (Circe uses this to clear by cohort_definition_id).
+            return cfg.cohort_table.lower() not in normalized
+        return False
+
     statements = _split_sql_statements(sql)
     sql_start = time.perf_counter()
     for idx, stmt in enumerate(statements, start=1):
         if not stmt.strip():
+            continue
+        _maybe_record_stage_table(stmt)
+        if _should_skip_stmt(stmt):
+            if cfg.circe_debug:
+                preview = " ".join(stmt.strip().split())[:160]
+                print(f"[Circe SQL {idx}/{len(statements)}] SKIP(cleanup) {preview}")
             continue
         if cfg.circe_debug:
             preview = " ".join(stmt.strip().split())[:160]
@@ -899,7 +973,11 @@ def execute_circe_sql(
         except Exception:
             pass
 
-    return row_count, {"sql_exec_ms": sql_ms, "count_query_ms": count_ms}
+    return row_count, {
+        "sql_exec_ms": sql_ms,
+        "count_query_ms": count_ms,
+        "stage_tables": circe_stage_tables,
+    }
 
 
 # -----------------------------------------------------------------------------
@@ -955,6 +1033,17 @@ def parse_args():
         default=25,
         help="Max rows to print for each diff side.",
     )
+    parser.add_argument(
+        "--trace-stages",
+        action="store_true",
+        help="Keep intermediate Python/Circe tables and print per-stage counts (total + diff-subject subset).",
+    )
+    parser.add_argument(
+        "--trace-subject-limit",
+        type=int,
+        default=50,
+        help="Max number of subject_ids to include in per-stage subset counts.",
+    )
     return parser.parse_args()
 
 
@@ -977,9 +1066,16 @@ def main():
 
         # 3. PYTHON PIPELINE
         py_cfg = cfg
-        if args.explain_dir and cfg.python_materialize_stages and not cfg.capture_stages:
+        if args.trace_stages:
+            py_cfg = cfg.model_copy(
+                update={
+                    "python_materialize_stages": True,
+                    "capture_stages": True,
+                }
+            )
+        if args.explain_dir and py_cfg.python_materialize_stages and not py_cfg.capture_stages:
             # Enable stage SQL capture for explains without requiring python-stage-dir/debug-prefix.
-            py_cfg = cfg.model_copy(update={"capture_stages": True})
+            py_cfg = py_cfg.model_copy(update={"capture_stages": True})
 
         (
             py_sql,
@@ -992,7 +1088,7 @@ def main():
         ) = run_python_pipeline(
             con,
             py_cfg,
-            keep_context_open=bool(args.explain_dir),
+            keep_context_open=bool(args.explain_dir) or args.trace_stages,
             diff=args.diff,
         )
         if cfg.python_sql_out:
@@ -1036,6 +1132,8 @@ def main():
             explain_dir.mkdir(parents=True, exist_ok=True)
 
         circe_cfg = cfg
+        if args.trace_stages:
+            circe_cfg = cfg.model_copy(update={"cleanup_circe": False})
         if args.diff and cfg.cleanup_circe:
             circe_cfg = cfg.model_copy(update={"cleanup_circe": False})
 
@@ -1044,9 +1142,11 @@ def main():
             circe_cfg,
             circe_sql,
             explain_dir=explain_dir,
+            preserve_temp_tables=args.trace_stages,
         )
 
-        if args.diff and py_diff_table and py_diff_db is not None:
+        diff_subject_ids: list[int] = []
+        if (args.diff or args.trace_stages) and py_diff_table and py_diff_db is not None:
             try:
                 target_db = cfg.result_schema or cfg.cdm_schema
                 cohort_tbl = (
@@ -1085,15 +1185,34 @@ def main():
 
                 a = int(missing_in_python.count().execute())
                 b = int(missing_in_circe.count().execute())
-                print(f"[Diff] missing_in_python={a} missing_in_circe={b}")
-                if args.diff_limit > 0 and a:
-                    df = missing_in_python.limit(args.diff_limit).execute()
-                    print(f"[Diff] Examples missing in python (limit {args.diff_limit}):")
-                    print(df)
-                if args.diff_limit > 0 and b:
-                    df = missing_in_circe.limit(args.diff_limit).execute()
-                    print(f"[Diff] Examples missing in circe (limit {args.diff_limit}):")
-                    print(df)
+                if args.diff:
+                    print(f"[Diff] missing_in_python={a} missing_in_circe={b}")
+                    if args.diff_limit > 0 and a:
+                        df = missing_in_python.limit(args.diff_limit).execute()
+                        print(f"[Diff] Examples missing in python (limit {args.diff_limit}):")
+                        print(df)
+                    if args.diff_limit > 0 and b:
+                        df = missing_in_circe.limit(args.diff_limit).execute()
+                        print(f"[Diff] Examples missing in circe (limit {args.diff_limit}):")
+                        print(df)
+
+                if args.trace_stages and (a or b):
+                    ids_a = (
+                        missing_in_python.select(missing_in_python.subject_id)
+                        .distinct()
+                        .limit(args.trace_subject_limit)
+                        .execute()
+                    )
+                    ids_b = (
+                        missing_in_circe.select(missing_in_circe.subject_id)
+                        .distinct()
+                        .limit(args.trace_subject_limit)
+                        .execute()
+                    )
+                    diff_subject_ids = [int(v) for v in ids_a["subject_id"].tolist()] + [
+                        int(v) for v in ids_b["subject_id"].tolist()
+                    ]
+                    diff_subject_ids = sorted(set(diff_subject_ids))
             except Exception as e:
                 print(f"Warning: failed to compute diffs: {e}", file=sys.stderr)
             finally:
@@ -1102,7 +1221,7 @@ def main():
                 except Exception:
                     pass
 
-        if args.diff and cfg.cleanup_circe:
+        if args.diff and cfg.cleanup_circe and not args.trace_stages:
             try:
                 qualified_table = qualify_identifier_for_backend(
                     cfg.cohort_table,
@@ -1116,7 +1235,41 @@ def main():
             except Exception:
                 pass
 
-        if py_ctx is not None:
+        if args.trace_stages:
+            # Print stage counts for quick triage.
+            print("[Trace] Circe stage tables:", circe_metrics.get("stage_tables", {}))
+            if py_ctx is not None:
+                print("[Trace] Python stage tables:")
+                stage_db = cfg.temp_schema
+                for idx, (table_name, _statement) in enumerate(py_ctx.captured_sql(), start=1):
+                    qualified = qualify_identifier_for_backend(
+                        table_name,
+                        stage_db,
+                        cfg.backend,
+                    )
+                    total = _sql_count(con, qualified)
+                    subset = (
+                        _sql_count_for_ids(con, qualified, id_column="person_id", ids=diff_subject_ids)
+                        if diff_subject_ids
+                        else 0
+                    )
+                    suffix = f" subset(person_id)={subset}" if diff_subject_ids else ""
+                    print(f"[Trace][Py {idx:02d}] {qualified} total={total}{suffix}")
+
+            circe_tables = circe_metrics.get("stage_tables") or {}
+            for label, name in circe_tables.items():
+                # Circe names may already be qualified (esp. after Databricks rewriting).
+                qualified = name if "." in name or name.startswith(("`", '"')) else qualify_identifier_for_backend(name, cfg.temp_schema, cfg.backend)
+                total = _sql_count(con, qualified)
+                subset = (
+                    _sql_count_for_ids(con, qualified, id_column="person_id", ids=diff_subject_ids)
+                    if diff_subject_ids and label not in {"codesets"}
+                    else 0
+                )
+                suffix = f" subset(person_id)={subset}" if diff_subject_ids and label not in {"codesets"} else ""
+                print(f"[Trace][Circe {label}] {qualified} total={total}{suffix}")
+
+        if py_ctx is not None and not args.trace_stages:
             py_ctx.close()
 
         # 5. REPORT
