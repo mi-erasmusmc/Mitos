@@ -88,7 +88,16 @@ def parse_args() -> argparse.Namespace:
 
     # Defaults requested: no python staging, inline codesets
     parser.add_argument("--python-stages", action="store_true", help="Enable python stage materialization.")
-    parser.add_argument("--python-materialize-codesets", action="store_true", help="Materialize codesets table.")
+    parser.add_argument(
+        "--inline-python-codesets",
+        action="store_true",
+        help="Inline codesets instead of materializing (materialize is default).",
+    )
+    parser.add_argument(
+        "--python-materialize-codesets",
+        action="store_true",
+        help="Materialize codesets table (default).",
+    )
     parser.add_argument("--circe-debug", action="store_true")
     parser.add_argument("--no-cleanup-circe", action="store_true")
     parser.add_argument("--explain-dir", help="Write EXPLAIN FORMATTED outputs per phenotype.")
@@ -173,9 +182,9 @@ def main() -> int:
     if args.no_cleanup_circe:
         overrides["cleanup_circe"] = False
 
-    # Defaults requested: no python staging and inline codesets unless explicitly enabled.
+    # Defaults: no python staging; do materialize codesets (override with --inline-python-codesets).
     overrides["python_materialize_stages"] = bool(args.python_stages)
-    overrides["python_materialize_codesets"] = bool(args.python_materialize_codesets)
+    overrides["python_materialize_codesets"] = not bool(args.inline_python_codesets)
 
     cfg = cfg.model_copy(update=overrides)
 

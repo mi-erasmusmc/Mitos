@@ -71,7 +71,7 @@ class BaseProfile(BaseModel):
     cleanup_circe: bool = True
     # Prefer lazy (non-materialized) expressions by default for portability/perf.
     python_materialize_stages: bool = False
-    python_materialize_codesets: bool = False
+    python_materialize_codesets: bool = True
 
     @model_validator(mode="after")
     def set_defaults(self) -> "BaseProfile":
@@ -885,7 +885,11 @@ def parse_args():
     parser.add_argument("--no-python-stages", action="store_true")
     parser.add_argument("--python-stages", action="store_true", help="Enable python stage materialization.")
     parser.add_argument("--inline-python-codesets", action="store_true")
-    parser.add_argument("--python-materialize-codesets", action="store_true", help="Materialize codesets table.")
+    parser.add_argument(
+        "--python-materialize-codesets",
+        action="store_true",
+        help="Materialize codesets table (default).",
+    )
     parser.add_argument(
         "--explain-dir",
         help="If set, write EXPLAIN FORMATTED output for python/circe into this directory.",
