@@ -116,12 +116,12 @@ def _assign_primary_event_ids(events):
     if "_source_event_id" not in events.columns:
         events = events.mutate(_source_event_id=events.event_id)
     order = [events.person_id, events.start_date, events._source_event_id]
-    global_window = ibis.window(order_by=order)
     person_window = ibis.window(group_by=events.person_id, order_by=order[1:])
-    global_rank = ibis.row_number().over(global_window)
     person_rank = ibis.row_number().over(person_window)
     events = events.mutate(
-        event_id=(global_rank + 1),
+        # Keep event ids unique *within* a person to avoid global sorts/shuffles.
+        # Most downstream logic keys by (person_id, event_id).
+        event_id=(person_rank + 1),
         _person_ordinal=(person_rank + 1),
     )
     supplemental = [

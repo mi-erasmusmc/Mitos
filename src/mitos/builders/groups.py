@@ -124,10 +124,24 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
     else:
         aggregator = joined._corr_match_value.count()
 
-    aggregated = joined.group_by(joined.event_id).aggregate(match_count=aggregator)
+    aggregated = joined.group_by(joined.person_id, joined.event_id).aggregate(
+        match_count=aggregator
+    )
     predicate = _occurrence_predicate(aggregated.match_count, correlated.occurrence)
-    matching_ids = aggregated.filter(predicate).select("event_id")
-    return events.event_id.isin(matching_ids.event_id)
+    matching_ids = aggregated.filter(predicate).select("person_id", "event_id").distinct()
+    matching_keys = matching_ids.mutate(
+        _event_key=(
+            matching_ids.person_id.cast("string")
+            + ibis.literal(":")
+            + matching_ids.event_id.cast("string")
+        )
+    ).select("_event_key")
+    event_key = (
+        events.person_id.cast("string")
+        + ibis.literal(":")
+        + events.event_id.cast("string")
+    )
+    return event_key.isin(matching_keys._event_key)
 
 
 def _group_mask(events: ir.Table, group: CriteriaGroup | None, ctx: BuildContext) -> ir.Value | None:
@@ -214,8 +228,20 @@ def _demographic_mask(events: ir.Table, demographic: DemoGraphicCriteria, ctx: B
     if not applied:
         return None
 
-    filtered_ids = filtered.select(filtered.event_id).distinct()
-    return events.event_id.isin(filtered_ids.event_id)
+    filtered_ids = filtered.select(filtered.person_id, filtered.event_id).distinct()
+    filtered_keys = filtered_ids.mutate(
+        _event_key=(
+            filtered_ids.person_id.cast("string")
+            + ibis.literal(":")
+            + filtered_ids.event_id.cast("string")
+        )
+    ).select("_event_key")
+    event_key = (
+        events.person_id.cast("string")
+        + ibis.literal(":")
+        + events.event_id.cast("string")
+    )
+    return event_key.isin(filtered_keys._event_key)
 
 
 def _occurrence_predicate(count_expr: ir.Value, occurrence) -> ir.Value:
