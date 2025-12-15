@@ -145,11 +145,11 @@ def test_pipeline_with_additional_inclusion_censoring_and_collapse():
     assert events is not None
     result = events.to_polars()
 
-    # Two condition events collapse into one; end date censored at observation.date (4) then +1 offset => 5
+    # Two condition events collapse into one; end date is the earlier of end-strategy and censor date.
     assert len(result) == 1
     row = result.row(0, named=True)
     assert row["start_date"] == datetime(2020, 1, 1)
-    assert row["end_date"] == datetime(2020, 1, 5)
+    assert row["end_date"] == datetime(2020, 1, 4)
 
 
 def test_inclusion_rule_counts_distinct_domain_concepts():

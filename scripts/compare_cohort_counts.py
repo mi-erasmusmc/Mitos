@@ -343,8 +343,14 @@ def _exec_raw(con: IbisConnection, sql: str) -> None:
         except Exception:
             pass
     finally:
+        # Ibis backends differ:
+        # - Databricks raw_sql returns a cursor that should be closed.
+        # - DuckDB raw_sql returns the underlying DuckDB connection object; calling
+        #   close() would close the entire connection and break subsequent statements.
         try:
-            cur.close()
+            underlying = getattr(con, "con", None)
+            if underlying is None or cur is not underlying:
+                cur.close()
         except Exception:
             pass
 
@@ -356,7 +362,9 @@ def _fetch_scalar(con: IbisConnection, sql: str):
         return row[0] if row else None
     finally:
         try:
-            cur.close()
+            underlying = getattr(con, "con", None)
+            if underlying is None or cur is not underlying:
+                cur.close()
         except Exception:
             pass
 
@@ -368,7 +376,9 @@ def explain_formatted(con: IbisConnection, sql: str) -> str:
         rows = cur.fetchall()
     finally:
         try:
-            cur.close()
+            underlying = getattr(con, "con", None)
+            if underlying is None or cur is not underlying:
+                cur.close()
         except Exception:
             pass
     parts: list[str] = []
