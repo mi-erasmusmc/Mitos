@@ -38,6 +38,26 @@ def test_phenotype_216_synthetic_dataset_expected_people_and_censoring():
         washout_count = int((df["person_id"] == expectations.washout_person_id).sum())
         assert washout_count == 1
 
+        # Washout boundary is inclusive at -365d: second event should be removed.
+        washout_boundary_count = int(
+            (df["person_id"] == expectations.washout_boundary_person_id).sum()
+        )
+        assert washout_boundary_count == 1
+
+        # Outside washout window: both events should remain.
+        washout_outside_count = int(
+            (df["person_id"] == expectations.washout_outside_person_id).sum()
+        )
+        assert washout_outside_count == 2
+
+        # End-strategy should cap at observation period end date.
+        cap_rows = df[df["person_id"] == expectations.strategy_cap_person_id]
+        assert len(cap_rows) == 1
+        cap_end = cap_rows.iloc[0]["end_date"]
+        if hasattr(cap_end, "date"):
+            cap_end = cap_end.date()
+        assert cap_end == expectations.strategy_cap_expected_end_date
+
         # Censoring should cut end_date to the censor date.
         censor_rows = df[df["person_id"] == expectations.censor_person_id]
         assert len(censor_rows) == 1
@@ -48,4 +68,3 @@ def test_phenotype_216_synthetic_dataset_expected_people_and_censoring():
         assert isinstance(end_dt, date)
     finally:
         ctx.close()
-

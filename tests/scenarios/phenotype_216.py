@@ -23,6 +23,10 @@ class Phenotype216Expectations:
     include_person_ids: set[int]
     exclude_person_ids: set[int]
     washout_person_id: int
+    washout_boundary_person_id: int
+    washout_outside_person_id: int
+    strategy_cap_person_id: int
+    strategy_cap_expected_end_date: date
     censor_person_id: int
     censor_expected_end_date: date
 
@@ -89,6 +93,59 @@ def build_fake_omop_for_phenotype_216(
         condition_concept_id=primary_concept,
         condition_start_date=index_date + timedelta(days=200),
         condition_end_date=index_date + timedelta(days=200),
+    )
+
+    # Washout boundary: second event is exactly 365 days after the first.
+    # If the washout lookback window is inclusive on the start boundary, the second event should be removed.
+    washout_boundary_person = 4
+    builder.add_person(person_id=washout_boundary_person)
+    builder.add_observation_period(
+        person_id=washout_boundary_person, start_date=op_start, end_date=op_end
+    )
+    builder.add_condition_occurrence(
+        person_id=washout_boundary_person,
+        condition_concept_id=primary_concept,
+        condition_start_date=index_date,
+        condition_end_date=index_date,
+    )
+    builder.add_condition_occurrence(
+        person_id=washout_boundary_person,
+        condition_concept_id=primary_concept,
+        condition_start_date=index_date + timedelta(days=365),
+        condition_end_date=index_date + timedelta(days=365),
+    )
+
+    # Outside washout: second event is 366 days after the first and should survive.
+    washout_outside_person = 5
+    builder.add_person(person_id=washout_outside_person)
+    builder.add_observation_period(
+        person_id=washout_outside_person, start_date=op_start, end_date=op_end
+    )
+    builder.add_condition_occurrence(
+        person_id=washout_outside_person,
+        condition_concept_id=primary_concept,
+        condition_start_date=index_date,
+        condition_end_date=index_date,
+    )
+    builder.add_condition_occurrence(
+        person_id=washout_outside_person,
+        condition_concept_id=primary_concept,
+        condition_start_date=index_date + timedelta(days=366),
+        condition_end_date=index_date + timedelta(days=366),
+    )
+
+    # End-strategy cap: date offset (180d) should be capped by observation_period_end_date.
+    strategy_cap_person = 6
+    strategy_cap_op_end = index_date + timedelta(days=60)
+    builder.add_person(person_id=strategy_cap_person)
+    builder.add_observation_period(
+        person_id=strategy_cap_person, start_date=op_start, end_date=strategy_cap_op_end
+    )
+    builder.add_condition_occurrence(
+        person_id=strategy_cap_person,
+        condition_concept_id=primary_concept,
+        condition_start_date=index_date,
+        condition_end_date=index_date,
     )
 
     # Censoring: trigger censoring platelet measurement (>150) after index date.
@@ -160,11 +217,21 @@ def build_fake_omop_for_phenotype_216(
     builder.materialize(con)
 
     expectations = Phenotype216Expectations(
-        include_person_ids={passing_person, washout_person, censor_person},
+        include_person_ids={
+            passing_person,
+            washout_person,
+            washout_boundary_person,
+            washout_outside_person,
+            strategy_cap_person,
+            censor_person,
+        },
         exclude_person_ids=set(failing_people),
         washout_person_id=washout_person,
+        washout_boundary_person_id=washout_boundary_person,
+        washout_outside_person_id=washout_outside_person,
+        strategy_cap_person_id=strategy_cap_person,
+        strategy_cap_expected_end_date=strategy_cap_op_end,
         censor_person_id=censor_person,
         censor_expected_end_date=censor_date,
     )
     return expression, expectations
-
