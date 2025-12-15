@@ -199,7 +199,7 @@ def test_codeset_resource_cleanup_idempotent_and_handles_exceptions():
 
 
 def test_materialize_codesets_uses_create_table_with_database_and_drop_table():
-    options = CohortBuildOptions(temp_emulation_schema="catalog.schema")
+    options = CohortBuildOptions(temp_emulation_schema="catalog.schema", backend="databricks")
     conn = DummyBackend(table_behavior="database")
     expr = FakeExpr("SELECT 1")
 
@@ -218,13 +218,16 @@ def test_materialize_codesets_uses_create_table_with_database_and_drop_table():
     # table lookup should be by database
     assert ("table", name, "catalog.schema") in conn.calls
 
+    # analyze call emitted for databricks
+    assert ("raw_sql", f"ANALYZE TABLE catalog.schema.{name} COMPUTE STATISTICS") in conn.calls
+
     # cleanup should drop by database with force=True
     resource.cleanup()
     assert ("drop_table", name, "catalog.schema", True) in conn.calls
 
 
 def test_materialize_codesets_uses_temp_tables_when_no_emulation():
-    options = CohortBuildOptions()
+    options = CohortBuildOptions(backend="duckdb")
     conn = DummyBackend(table_behavior="always")
     expr = FakeExpr("SELECT 1")
 
@@ -238,6 +241,9 @@ def test_materialize_codesets_uses_temp_tables_when_no_emulation():
     assert temp is True
     assert overwrite is True
     assert ("table", name, None) in conn.calls
+
+    # analyze call emitted for duckdb
+    assert ("raw_sql", f"ANALYZE {name}") in conn.calls
 
     resource.cleanup()
     assert ("drop_table", name, None, True) in conn.calls

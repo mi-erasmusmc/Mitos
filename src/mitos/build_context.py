@@ -497,6 +497,7 @@ def _materialize_codesets(
             overwrite=True,
         )
         table = _table(conn, database, name)
+        qualified = _qualify(database, name)
 
         def _drop():
             try:
@@ -511,12 +512,23 @@ def _materialize_codesets(
             overwrite=True,
         )
         table = _table(conn, None, name)
+        qualified = _qualify(None, name)
 
         def _drop():
             try:
                 conn.drop_table(name, force=True)
             except Exception:
                 print(f"Warning: could not drop codeset temp table {name}")
+
+    backend = options.backend
+    if backend:
+        try:
+            if backend in ("postgres", "duckdb"):
+                conn.raw_sql(f"ANALYZE {qualified}")
+            elif backend == "databricks":
+                conn.raw_sql(f"ANALYZE TABLE {qualified} COMPUTE STATISTICS")
+        except Exception:
+            print(f"Warning: could not analyze codeset table {qualified}")
 
     resource = CodesetResource(table=table, _dropper=_drop)
     weakref.finalize(resource, resource.cleanup)

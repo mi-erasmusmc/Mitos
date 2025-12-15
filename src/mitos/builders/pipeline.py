@@ -44,9 +44,19 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
         return ctx.maybe_materialize(table, label=label, analyze=True)
 
     primary = expression.primary_criteria
-    event_tables = [build_events(criteria, ctx) for criteria in primary.criteria_list]
+    event_tables: list[ir.Table] = []
+    for criteria in primary.criteria_list:
+        table = build_events(criteria, ctx)
+        if table is None:
+            continue
+        event_tables.append(table)
     if not event_tables:
         return None
+    if ctx.should_materialize_stages():
+        materialized: list[ir.Table] = []
+        for idx, table in enumerate(event_tables, start=1):
+            materialized.append(ctx.maybe_materialize(table, label=f"primary_src_{idx}", analyze=True))
+        event_tables = materialized
     events = event_tables[0]
     for table in event_tables[1:]:
         events = events.union(table, distinct=False)
