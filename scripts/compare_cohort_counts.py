@@ -11,6 +11,7 @@ import time
 import shutil
 import tempfile
 import contextlib
+import uuid
 from pathlib import Path
 from typing import Any, Literal, Annotated
 
@@ -238,7 +239,7 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
     else:
         config_dict = {"backend": args.backend or "duckdb"}
 
-    meta_keys = {"config", "profile", "explain_dir"}
+    meta_keys = {"config", "profile", "explain_dir", "diff", "diff_limit"}
     cli_args = {
         k: v for k, v in vars(args).items() if v is not None and k not in meta_keys
     }
@@ -535,7 +536,8 @@ def run_python_pipeline(
     cfg: AnyProfile,
     *,
     keep_context_open: bool = False,
-) -> tuple[str, int, dict[str, float], list[dict], BuildContext | None]:
+    diff: bool = False,
+) -> tuple[str, int, dict[str, float], list[dict], BuildContext | None, str | None, str | None]:
     expression = CohortExpression.model_validate_json(cfg.json_path.read_text())
 
     options = CohortBuildOptions(
@@ -555,6 +557,9 @@ def run_python_pipeline(
     ctx = BuildContext(con, options, resource)
     stage_details: list[dict[str, object]] = []
 
+    python_diff_table: str | None = None
+    python_diff_db: str | None = None
+
     try:
         build_start = time.perf_counter()
         events = build_primary_events(expression, ctx)
@@ -571,6 +576,33 @@ def run_python_pipeline(
         count = int(events.count().execute())
 
         final_exec_ms = (time.perf_counter() - count_start) * 1000
+
+        if diff:
+            python_diff_db = cfg.temp_schema or cfg.result_schema
+            if python_diff_db is None and cfg.backend == "duckdb":
+                python_diff_db = cfg.cdm_schema
+            python_diff_table = f"_mitos_python_cohort_rows_{uuid.uuid4().hex}"
+            try:
+                cohort_rows = events.select(
+                    cohort_definition_id=ibis.literal(int(cfg.cohort_id)).cast("int64"),
+                    subject_id=events.person_id.cast("int64"),
+                    cohort_start_date=events.start_date.cast("date"),
+                    cohort_end_date=events.end_date.cast("date"),
+                )
+                con.create_table(
+                    python_diff_table,
+                    obj=cohort_rows,
+                    database=python_diff_db,
+                    temp=False,
+                    overwrite=True,
+                )
+            except Exception as e:
+                python_diff_table = None
+                python_diff_db = None
+                print(
+                    f"Warning: failed to materialize python cohort rows for diff: {e}",
+                    file=sys.stderr,
+                )
 
         if cfg.capture_stages:
             want_row_counts = bool(cfg.python_stage_dir)
@@ -613,7 +645,15 @@ def run_python_pipeline(
         "final_exec_ms": final_exec_ms,
         "total_ms": codeset_exec_ms + build_exec_ms + compile_sql_ms + final_exec_ms,
     }
-    return str(sql), count, metrics, stage_details, (ctx if keep_context_open else None)
+    return (
+        str(sql),
+        count,
+        metrics,
+        stage_details,
+        (ctx if keep_context_open else None),
+        python_diff_table,
+        python_diff_db,
+    )
 
 
 def generate_circe_sql_via_r(
@@ -904,6 +944,17 @@ def parse_args():
         "--explain-dir",
         help="If set, write EXPLAIN FORMATTED output for python/circe into this directory.",
     )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Compute and print row-level diffs between Python and Circe cohorts.",
+    )
+    parser.add_argument(
+        "--diff-limit",
+        type=int,
+        default=25,
+        help="Max rows to print for each diff side.",
+    )
     return parser.parse_args()
 
 
@@ -930,8 +981,19 @@ def main():
             # Enable stage SQL capture for explains without requiring python-stage-dir/debug-prefix.
             py_cfg = cfg.model_copy(update={"capture_stages": True})
 
-        py_sql, py_count, py_metrics, py_stages, py_ctx = run_python_pipeline(
-            con, py_cfg, keep_context_open=bool(args.explain_dir)
+        (
+            py_sql,
+            py_count,
+            py_metrics,
+            py_stages,
+            py_ctx,
+            py_diff_table,
+            py_diff_db,
+        ) = run_python_pipeline(
+            con,
+            py_cfg,
+            keep_context_open=bool(args.explain_dir),
+            diff=args.diff,
         )
         if cfg.python_sql_out:
             cfg.python_sql_out.write_text(py_sql)
@@ -973,12 +1035,86 @@ def main():
         if explain_dir is not None:
             explain_dir.mkdir(parents=True, exist_ok=True)
 
+        circe_cfg = cfg
+        if args.diff and cfg.cleanup_circe:
+            circe_cfg = cfg.model_copy(update={"cleanup_circe": False})
+
         circe_count, circe_metrics = execute_circe_sql(
             con,
-            cfg,
+            circe_cfg,
             circe_sql,
             explain_dir=explain_dir,
         )
+
+        if args.diff and py_diff_table and py_diff_db is not None:
+            try:
+                target_db = cfg.result_schema or cfg.cdm_schema
+                cohort_tbl = (
+                    con.table(cfg.cohort_table, database=target_db)
+                    if target_db
+                    else con.table(cfg.cohort_table)
+                )
+                circe_rows = cohort_tbl.filter(
+                    cohort_tbl.cohort_definition_id == cfg.cohort_id
+                ).select(
+                    cohort_definition_id=cohort_tbl.cohort_definition_id.cast("int64"),
+                    subject_id=cohort_tbl.subject_id.cast("int64"),
+                    cohort_start_date=cohort_tbl.cohort_start_date.cast("date"),
+                    cohort_end_date=cohort_tbl.cohort_end_date.cast("date"),
+                )
+                py_rows_tbl = (
+                    con.table(py_diff_table, database=py_diff_db)
+                    if py_diff_db
+                    else con.table(py_diff_table)
+                )
+                py_rows = py_rows_tbl.select(
+                    cohort_definition_id=py_rows_tbl.cohort_definition_id.cast("int64"),
+                    subject_id=py_rows_tbl.subject_id.cast("int64"),
+                    cohort_start_date=py_rows_tbl.cohort_start_date.cast("date"),
+                    cohort_end_date=py_rows_tbl.cohort_end_date.cast("date"),
+                )
+
+                key = [
+                    "cohort_definition_id",
+                    "subject_id",
+                    "cohort_start_date",
+                    "cohort_end_date",
+                ]
+                missing_in_python = circe_rows.anti_join(py_rows, key)
+                missing_in_circe = py_rows.anti_join(circe_rows, key)
+
+                a = int(missing_in_python.count().execute())
+                b = int(missing_in_circe.count().execute())
+                print(f"[Diff] missing_in_python={a} missing_in_circe={b}")
+                if args.diff_limit > 0 and a:
+                    df = missing_in_python.limit(args.diff_limit).execute()
+                    print(f"[Diff] Examples missing in python (limit {args.diff_limit}):")
+                    print(df)
+                if args.diff_limit > 0 and b:
+                    df = missing_in_circe.limit(args.diff_limit).execute()
+                    print(f"[Diff] Examples missing in circe (limit {args.diff_limit}):")
+                    print(df)
+            except Exception as e:
+                print(f"Warning: failed to compute diffs: {e}", file=sys.stderr)
+            finally:
+                try:
+                    con.drop_table(py_diff_table, database=py_diff_db, force=True)
+                except Exception:
+                    pass
+
+        if args.diff and cfg.cleanup_circe:
+            try:
+                qualified_table = qualify_identifier_for_backend(
+                    cfg.cohort_table,
+                    cfg.result_schema or cfg.cdm_schema,
+                    cfg.backend,
+                )
+                _exec_raw(
+                    con,
+                    f"DELETE FROM {qualified_table} WHERE cohort_definition_id = {cfg.cohort_id}",
+                )
+            except Exception:
+                pass
 
         if py_ctx is not None:
             py_ctx.close()

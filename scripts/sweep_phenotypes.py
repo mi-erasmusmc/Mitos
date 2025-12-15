@@ -226,9 +226,15 @@ def main() -> int:
                 if explain_dir is not None and per.python_materialize_stages and not per.capture_stages:
                     py_cfg = per.model_copy(update={"capture_stages": True})
 
-                py_sql, python_count, python_metrics, _, py_ctx = run_python_pipeline(
-                    con, py_cfg, keep_context_open=bool(explain_dir)
-                )
+                (
+                    py_sql,
+                    python_count,
+                    python_metrics,
+                    _,
+                    py_ctx,
+                    _py_diff_table,
+                    _py_diff_db,
+                ) = run_python_pipeline(con, py_cfg, keep_context_open=bool(explain_dir), diff=False)
                 record["python_rows"] = int(python_count)
                 record["python_total_ms"] = python_metrics.get("total_ms")
                 if explain_dir is not None:
