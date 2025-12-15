@@ -247,6 +247,7 @@ def resolve_config(args: argparse.Namespace) -> AnyProfile:
         "diff_limit",
         "trace_stages",
         "trace_subject_limit",
+        "diff_report",
     }
     cli_args = {
         k: v for k, v in vars(args).items() if v is not None and k not in meta_keys
@@ -359,6 +360,59 @@ def _sql_count_for_ids(
     return int(
         _fetch_scalar(con, f"SELECT COUNT(*) FROM {qualified} WHERE {id_column} IN ({id_list})")
     )
+
+
+def _sql_person_summary(
+    con: IbisConnection,
+    qualified: str,
+    *,
+    id_column: str,
+    ids: list[int],
+    extra_columns_sql: str = "",
+) -> list[tuple]:
+    if not ids:
+        return []
+    id_list = ", ".join(str(int(v)) for v in ids)
+    sql = (
+        f"SELECT {id_column} AS person_id, COUNT(*) AS n {extra_columns_sql} "
+        f"FROM {qualified} "
+        f"WHERE {id_column} IN ({id_list}) "
+        f"GROUP BY {id_column} "
+        f"ORDER BY {id_column}"
+    )
+    cur = con.raw_sql(sql)
+    try:
+        return cur.fetchall()
+    finally:
+        try:
+            underlying = getattr(con, "con", None)
+            if underlying is None or cur is not underlying:
+                cur.close()
+        except Exception:
+            pass
+
+
+def _sql_fetch_rows(con: IbisConnection, sql: str) -> tuple[list[str], list[tuple]]:
+    cur = con.raw_sql(sql)
+    try:
+        cols = [d[0] for d in (cur.description or [])]
+        rows = cur.fetchall()
+        return cols, rows
+    finally:
+        try:
+            underlying = getattr(con, "con", None)
+            if underlying is None or cur is not underlying:
+                cur.close()
+        except Exception:
+            pass
+
+
+def _format_rows_as_tsv(columns: list[str], rows: list[tuple]) -> str:
+    if not rows:
+        return "<empty>"
+    header = "\t".join(columns)
+    body = "\n".join("\t".join("" if v is None else str(v) for v in r) for r in rows)
+    return f"{header}\n{body}"
 
 def _exec_raw(con: IbisConnection, sql: str) -> None:
     """
@@ -883,15 +937,49 @@ def execute_circe_sql(
                 circe_stage_tables[label] = name
                 return
 
+    def _is_preserved_table_name(token: str) -> bool:
+        if not token:
+            return False
+        candidate = token.strip().rstrip(";")
+        cand_lower = candidate.lower()
+        for name in circe_stage_tables.values():
+            if cand_lower == name.strip().rstrip(";").lower():
+                return True
+        return False
+
     def _should_skip_stmt(stmt: str) -> bool:
         if not preserve_temp_tables:
             return False
         normalized = " ".join(stmt.strip().split()).lower()
-        if normalized.startswith("drop table ") or normalized.startswith("truncate table "):
-            return True
+        if normalized.startswith("drop table "):
+            # DROP TABLE [IF EXISTS] <name>
+            m = re.match(
+                r"^drop\s+table\s+(?:if\s+exists\s+)?([^\s;]+)",
+                stmt.strip(),
+                flags=re.IGNORECASE,
+            )
+            return _is_preserved_table_name(m.group(1)) if m else False
+        if normalized.startswith("truncate table "):
+            m = re.match(
+                r"^truncate\s+table\s+([^\s;]+)",
+                stmt.strip(),
+                flags=re.IGNORECASE,
+            )
+            return _is_preserved_table_name(m.group(1)) if m else False
         if normalized.startswith("delete from "):
-            # Keep deletes against the target cohort table (Circe uses this to clear by cohort_definition_id).
-            return cfg.cohort_table.lower() not in normalized
+            # Keep deletes against the target cohort table (Circe uses this to clear by cohort_definition_id),
+            # and skip deletes for stage tables we want preserved.
+            m = re.match(
+                r"^delete\s+from\s+([^\s;]+)",
+                stmt.strip(),
+                flags=re.IGNORECASE,
+            )
+            if not m:
+                return False
+            token = m.group(1)
+            if cfg.cohort_table.lower() in token.lower():
+                return False
+            return _is_preserved_table_name(token)
         return False
 
     statements = _split_sql_statements(sql)
@@ -1044,12 +1132,20 @@ def parse_args():
         default=50,
         help="Max number of subject_ids to include in per-stage subset counts.",
     )
+    parser.add_argument(
+        "--diff-report",
+        action="store_true",
+        help="Print a copy/paste-friendly triage report for diffing subjects (implies --diff).",
+    )
     return parser.parse_args()
 
 
 def main():
     try:
         args = parse_args()
+        if args.diff_report:
+            args.diff = True
+            args.trace_stages = True
 
         # 1. The Pydantic Power Move
         # Validate YAML file -> Pick Profile -> Merge CLI -> Validate Result
@@ -1146,9 +1242,16 @@ def main():
         )
 
         diff_subject_ids: list[int] = []
+        python_diff_qualified: str | None = None
+        target_db = cfg.result_schema or cfg.cdm_schema
+        circe_target_qualified = qualify_identifier_for_backend(
+            cfg.cohort_table,
+            target_db,
+            cfg.backend,
+        )
+
         if (args.diff or args.trace_stages) and py_diff_table and py_diff_db is not None:
             try:
-                target_db = cfg.result_schema or cfg.cdm_schema
                 cohort_tbl = (
                     con.table(cfg.cohort_table, database=target_db)
                     if target_db
@@ -1166,6 +1269,11 @@ def main():
                     con.table(py_diff_table, database=py_diff_db)
                     if py_diff_db
                     else con.table(py_diff_table)
+                )
+                python_diff_qualified = qualify_identifier_for_backend(
+                    py_diff_table,
+                    py_diff_db,
+                    cfg.backend,
                 )
                 py_rows = py_rows_tbl.select(
                     cohort_definition_id=py_rows_tbl.cohort_definition_id.cast("int64"),
@@ -1216,10 +1324,11 @@ def main():
             except Exception as e:
                 print(f"Warning: failed to compute diffs: {e}", file=sys.stderr)
             finally:
-                try:
-                    con.drop_table(py_diff_table, database=py_diff_db, force=True)
-                except Exception:
-                    pass
+                if not args.trace_stages:
+                    try:
+                        con.drop_table(py_diff_table, database=py_diff_db, force=True)
+                    except Exception:
+                        pass
 
         if args.diff and cfg.cleanup_circe and not args.trace_stages:
             try:
@@ -1238,6 +1347,9 @@ def main():
         if args.trace_stages:
             # Print stage counts for quick triage.
             print("[Trace] Circe stage tables:", circe_metrics.get("stage_tables", {}))
+            if python_diff_qualified:
+                print(f"[Trace] Python diff table: {python_diff_qualified}")
+            print(f"[Trace] Circe target cohort table: {circe_target_qualified}")
             if py_ctx is not None:
                 print("[Trace] Python stage tables:")
                 stage_db = cfg.temp_schema
@@ -1268,6 +1380,202 @@ def main():
                 )
                 suffix = f" subset(person_id)={subset}" if diff_subject_ids and label not in {"codesets"} else ""
                 print(f"[Trace][Circe {label}] {qualified} total={total}{suffix}")
+
+            if diff_subject_ids:
+                print(f"[Trace] Diff subject_ids ({len(diff_subject_ids)}): {diff_subject_ids[:20]}{'...' if len(diff_subject_ids) > 20 else ''}")
+
+                # Per-subject summaries at key stages.
+                try:
+                    expression = CohortExpression.model_validate_json(cfg.json_path.read_text())
+                    rule_names = [r.name or f"rule_{i}" for i, r in enumerate(expression.inclusion_rules or [], start=0)]
+
+                    # Python: try to locate a few important stage tables by name.
+                    py_tables = [name for (name, _stmt) in (py_ctx.captured_sql() if py_ctx else [])]
+                    def _last_matching(substr: str) -> str | None:
+                        for t in reversed(py_tables):
+                            if substr in t:
+                                return t
+                        return None
+
+                    py_primary = _last_matching("_stage_primary_events_")
+                    py_hits = _last_matching("_stage_inclusion_hits_")
+                    py_inclusion = _last_matching("_stage_inclusion_")
+                    if py_inclusion and "_stage_inclusion_hits_" in py_inclusion:
+                        # pick the filtered inclusion stage if available
+                        py_inclusion = _last_matching("_stage_inclusion_")  # best-effort
+                    py_strategy = _last_matching("_stage_strategy_ends_")
+                    py_censoring = _last_matching("_stage_censoring_")
+                    py_final = _last_matching("_stage_final_cohort_")
+
+                    if py_primary:
+                        q = qualify_identifier_for_backend(py_primary, cfg.temp_schema, cfg.backend)
+                        rows = _sql_person_summary(
+                            con,
+                            q,
+                            id_column="person_id",
+                            ids=diff_subject_ids,
+                            extra_columns_sql=", MIN(start_date) AS min_start, MAX(end_date) AS max_end",
+                        )
+                        print("[Trace][Py primary_events] person_id, n, min_start, max_end:", rows)
+                    if py_hits:
+                        q = qualify_identifier_for_backend(py_hits, cfg.temp_schema, cfg.backend)
+                        id_list = ", ".join(str(int(v)) for v in diff_subject_ids)
+                        cols, rows = _sql_fetch_rows(
+                            con,
+                            f"""SELECT person_id, _rule_bit, COUNT(*) AS n
+                                 FROM {q}
+                                 WHERE person_id IN ({id_list})
+                                 GROUP BY person_id, _rule_bit
+                                 ORDER BY person_id, _rule_bit""",
+                        )
+                        decoded: list[tuple] = []
+                        for person_id, bit, n in rows:
+                            try:
+                                idx = int(bit).bit_length() - 1
+                            except Exception:
+                                idx = None
+                            name = rule_names[idx] if idx is not None and 0 <= idx < len(rule_names) else None
+                            decoded.append((person_id, bit, idx, name, n))
+                        print("[Report][Py inclusion_hits decoded] person_id\t_rule_bit\trule_index\trule_name\tn")
+                        for r in decoded:
+                            print("\t".join("" if v is None else str(v) for v in r))
+                    if py_inclusion:
+                        q = qualify_identifier_for_backend(py_inclusion, cfg.temp_schema, cfg.backend)
+                        rows = _sql_person_summary(
+                            con,
+                            q,
+                            id_column="person_id",
+                            ids=diff_subject_ids,
+                            extra_columns_sql=", MIN(start_date) AS min_start, MAX(end_date) AS max_end",
+                        )
+                        print("[Trace][Py inclusion] person_id, n, min_start, max_end:", rows)
+                    if py_strategy:
+                        q = qualify_identifier_for_backend(py_strategy, cfg.temp_schema, cfg.backend)
+                        rows = _sql_person_summary(
+                            con,
+                            q,
+                            id_column="person_id",
+                            ids=diff_subject_ids,
+                            extra_columns_sql=", MIN(start_date) AS min_start, MAX(end_date) AS max_end",
+                        )
+                        print("[Trace][Py strategy_ends] person_id, n, min_start, max_end:", rows)
+                    if py_censoring:
+                        q = qualify_identifier_for_backend(py_censoring, cfg.temp_schema, cfg.backend)
+                        rows = _sql_person_summary(
+                            con,
+                            q,
+                            id_column="person_id",
+                            ids=diff_subject_ids,
+                            extra_columns_sql=", MIN(start_date) AS min_start, MAX(end_date) AS max_end",
+                        )
+                        print("[Trace][Py censoring] person_id, n, min_start, max_end:", rows)
+                    if py_final:
+                        q = qualify_identifier_for_backend(py_final, cfg.temp_schema, cfg.backend)
+                        rows = _sql_person_summary(
+                            con,
+                            q,
+                            id_column="person_id",
+                            ids=diff_subject_ids,
+                            extra_columns_sql=", MIN(start_date) AS min_start, MAX(end_date) AS max_end",
+                        )
+                        print("[Trace][Py final_cohort] person_id, n, min_start, max_end:", rows)
+                        cols, rows = _sql_fetch_rows(
+                            con,
+                            f"SELECT * FROM {q} WHERE person_id IN ({', '.join(str(int(v)) for v in diff_subject_ids)}) ORDER BY person_id, start_date",
+                        )
+                        print("[Report][Py final_cohort rows]\n" + _format_rows_as_tsv(cols, rows))
+                    if python_diff_qualified:
+                        rows = _sql_person_summary(
+                            con,
+                            python_diff_qualified,
+                            id_column="subject_id",
+                            ids=diff_subject_ids,
+                            extra_columns_sql=", MIN(cohort_start_date) AS min_start, MAX(cohort_end_date) AS max_end",
+                        )
+                        print("[Trace][Py cohort rows] subject_id, n, min_start, max_end:", rows)
+                        cols, rows = _sql_fetch_rows(
+                            con,
+                            f"SELECT * FROM {python_diff_qualified} WHERE subject_id IN ({', '.join(str(int(v)) for v in diff_subject_ids)}) ORDER BY subject_id, cohort_start_date",
+                        )
+                        print("[Report][Py cohort rows]\n" + _format_rows_as_tsv(cols, rows))
+
+                    # Circe: important stage tables
+                    ct = circe_metrics.get("stage_tables") or {}
+                    for label, id_col, extra in (
+                        ("qualified_events", "person_id", ", MIN(start_date) AS min_start, MAX(end_date) AS max_end"),
+                        ("included_events", "person_id", ", MIN(start_date) AS min_start, MAX(end_date) AS max_end"),
+                        ("final_cohort", "person_id", ", MIN(start_date) AS min_start, MAX(end_date) AS max_end"),
+                    ):
+                        if label in ct:
+                            rows = _sql_person_summary(
+                                con,
+                                ct[label],
+                                id_column=id_col,
+                                ids=diff_subject_ids,
+                                extra_columns_sql=extra,
+                            )
+                            print(f"[Trace][Circe {label}] person_id, n, min_start, max_end:", rows)
+                    if "inclusion_events" in ct:
+                        id_list = ", ".join(str(int(v)) for v in diff_subject_ids)
+                        cols, rows = _sql_fetch_rows(
+                            con,
+                            f"""SELECT person_id, inclusion_rule_id, COUNT(*) AS n
+                                 FROM {ct['inclusion_events']}
+                                 WHERE person_id IN ({id_list})
+                                 GROUP BY person_id, inclusion_rule_id
+                                 ORDER BY person_id, inclusion_rule_id""",
+                        )
+                        print("[Report][Circe inclusion_events] " + _format_rows_as_tsv(cols, rows))
+                    rows = _sql_person_summary(
+                        con,
+                        circe_target_qualified,
+                        id_column="subject_id",
+                        ids=diff_subject_ids,
+                        extra_columns_sql=", MIN(cohort_start_date) AS min_start, MAX(cohort_end_date) AS max_end",
+                    )
+                    print("[Trace][Circe cohort rows] subject_id, n, min_start, max_end:", rows)
+                    cols, rows = _sql_fetch_rows(
+                        con,
+                        f"SELECT * FROM {circe_target_qualified} WHERE cohort_definition_id = {int(cfg.cohort_id)} AND subject_id IN ({', '.join(str(int(v)) for v in diff_subject_ids)}) ORDER BY subject_id, cohort_start_date",
+                    )
+                    print("[Report][Circe cohort rows]\n" + _format_rows_as_tsv(cols, rows))
+                except Exception as e:
+                    print(f"Warning: failed to print per-subject summaries: {e}", file=sys.stderr)
+
+        if args.diff_report and py_ctx is not None:
+            # Clean up python stage tables and diff table; report mode should leave nothing behind.
+            stage_db = cfg.temp_schema
+            for table_name, _stmt in py_ctx.captured_sql():
+                try:
+                    con.drop_table(table_name, database=stage_db, force=True)
+                except Exception:
+                    pass
+            if py_diff_table and py_diff_db is not None:
+                try:
+                    con.drop_table(py_diff_table, database=py_diff_db, force=True)
+                except Exception:
+                    pass
+            try:
+                py_ctx.close()
+            except Exception:
+                pass
+
+        if args.diff_report:
+            # Clean up Circe stage tables we preserved.
+            stage_tables = circe_metrics.get("stage_tables") or {}
+            for _label, qualified in stage_tables.items():
+                try:
+                    _exec_raw(con, f"DROP TABLE IF EXISTS {qualified}")
+                except Exception:
+                    pass
+            # Clear the target cohort table for this cohort id (Circe rows).
+            try:
+                _exec_raw(
+                    con,
+                    f"DELETE FROM {circe_target_qualified} WHERE cohort_definition_id = {cfg.cohort_id}",
+                )
+            except Exception:
+                pass
 
         if py_ctx is not None and not args.trace_stages:
             py_ctx.close()
