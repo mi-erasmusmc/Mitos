@@ -73,7 +73,7 @@ def apply_censoring(events: ir.Table, criteria_list: list[Criteria], ctx: BuildC
         how="left",
     )
     min_censor = joined.group_by(joined.person_id, joined.event_id).aggregate(
-        censor_date=censor_events.censor_start.min()
+        censor_date=joined.censor_start.min()
     )
     event_columns = events.columns
     events = events.left_join(

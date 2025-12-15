@@ -86,15 +86,16 @@ def build_primary_events(expression: CohortExpression, ctx: BuildContext):
     if expression.inclusion_rules:
         events = ctx.maybe_materialize(events, label="inclusion", analyze=True)
     # Circe ignores QualifiedLimit, so we do the same to preserve parity.
-
-    events = apply_censoring(events, expression.censoring_criteria, ctx)
-    if expression.censoring_criteria:
-        events = ctx.maybe_materialize(events, label="censoring", analyze=True)
     if _should_limit(expression.expression_limit):
         events = _apply_result_limit(events, expression.expression_limit)
     events = apply_end_strategy(events, expression.end_strategy, ctx)
     if expression.end_strategy and not expression.end_strategy.is_empty():
         events = _maybe_materialize(events, label="strategy_ends")
+
+    # Censoring should cut the cohort end date, so apply it after end strategy.
+    events = apply_censoring(events, expression.censoring_criteria, ctx)
+    if expression.censoring_criteria:
+        events = ctx.maybe_materialize(events, label="censoring", analyze=True)
     events = apply_censor_window(events, expression.censor_window, ctx)
     events = _drop_aux_columns(events)
     events = collapse_events(events, expression.collapse_settings)
