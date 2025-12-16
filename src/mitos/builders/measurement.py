@@ -40,7 +40,7 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
     value_column = "value_as_number"
     if criteria.unit:
         table = apply_concept_filters(table, "unit_concept_id", criteria.unit)
-        table, value_column = _maybe_normalize_units(table, criteria.unit)
+        table, value_column = _maybe_normalize_units(table, criteria.unit, criteria.value_as_number)
     table = apply_concept_set_selection(table, "unit_concept_id", criteria.unit_cs, ctx)
 
     if criteria.value_as_concept:
@@ -71,19 +71,53 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
     return apply_criteria_group(events, criteria.correlated_criteria, ctx)
 
 
-def _maybe_normalize_units(table, units):
+def _maybe_normalize_units(table, units, value_range):
+    """
+    Best-effort unit normalization for numeric comparisons.
+
+    Circe generally relies on unit-specific criteria rows (separate thresholds per unit scale).
+    Normalizing in that situation breaks parity (e.g. neutrophil counts expressed as 10..1500 cells/uL).
+
+    Strategy:
+      - Always normalize mass to kilograms (pounds -> kg).
+      - For cell counts, only normalize when the numeric range appears to be in the canonical 10^9/L scale.
+        Heuristic: upper bound <= 100.
+    """
     unit_ids = [concept.concept_id for concept in units if concept.concept_id is not None]
     if not unit_ids:
         return table, "value_as_number"
     if not all(unit_id in _UNIT_NORMALIZATION for unit_id in unit_ids):
         return table, "value_as_number"
-    groups = { _UNIT_NORMALIZATION[unit_id][0] for unit_id in unit_ids}
+    groups = {_UNIT_NORMALIZATION[unit_id][0] for unit_id in unit_ids}
     if len(groups) != 1:
         return table, "value_as_number"
+
+    group = next(iter(groups))
+    if group == "mass_kg":
+        should_normalize = True
+    elif group == "count_10e9_per_l":
+        should_normalize = _range_looks_like_canonical_cell_count(value_range)
+    else:
+        should_normalize = False
+
+    if not should_normalize:
+        return table, "value_as_number"
+
     multiplier = _unit_multiplier_expr(table.unit_concept_id, unit_ids)
     normalized = (table.value_as_number * multiplier).name("_normalized_value")
     table = table.mutate(_normalized_value=normalized)
     return table, "_normalized_value"
+
+
+def _range_looks_like_canonical_cell_count(value_range) -> bool:
+    if value_range is None or value_range.value is None:
+        return False
+    op = (value_range.op or "eq").lower()
+    upper = float(value_range.value)
+    if op.endswith("bt") and value_range.extent is not None:
+        upper = max(upper, float(value_range.extent))
+    # Canonical 10^9/L scale is typically << 100; high thresholds indicate raw unit ranges.
+    return upper <= 100.0
 
 
 def _unit_multiplier_expr(unit_column, unit_ids):
