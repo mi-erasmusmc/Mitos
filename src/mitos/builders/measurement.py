@@ -50,6 +50,16 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
     table = apply_numeric_range(table, value_column, criteria.value_as_number)
     table = apply_numeric_range(table, "range_low", criteria.range_low)
     table = apply_numeric_range(table, "range_high", criteria.range_high)
+    if getattr(criteria, "range_low_ratio", None):
+        denom = ibis.ifelse(table.range_low == 0, ibis.null(), table.range_low)
+        ratio = (table.value_as_number / denom).name("_range_low_ratio")
+        table = table.mutate(_range_low_ratio=ratio)
+        table = apply_numeric_range(table, "_range_low_ratio", criteria.range_low_ratio)
+    if getattr(criteria, "range_high_ratio", None):
+        denom = ibis.ifelse(table.range_high == 0, ibis.null(), table.range_high)
+        ratio = (table.value_as_number / denom).name("_range_high_ratio")
+        table = table.mutate(_range_high_ratio=ratio)
+        table = apply_numeric_range(table, "_range_high_ratio", criteria.range_high_ratio)
 
     if criteria.age:
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())

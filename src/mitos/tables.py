@@ -143,6 +143,8 @@ class Measurement(Criteria):
     unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="UnitCS")
     range_low: Optional[NumericRange] = Field(default=None, alias="RangeLow")
     range_high: Optional[NumericRange] = Field(default=None, alias="RangeHigh")
+    range_low_ratio: Optional[NumericRange] = Field(default=None, alias="RangeLowRatio")
+    range_high_ratio: Optional[NumericRange] = Field(default=None, alias="RangeHighRatio")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
