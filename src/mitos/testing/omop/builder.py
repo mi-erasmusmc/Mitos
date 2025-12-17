@@ -200,6 +200,35 @@ class OmopBuilder:
         )
         return meas_id
 
+    def add_observation(
+        self,
+        *,
+        person_id: int,
+        observation_concept_id: int,
+        observation_date: date,
+        observation_id: int | None = None,
+        observation_type_concept_id: int = 0,
+        value_as_number: float | None = None,
+        value_as_concept_id: int = 0,
+        unit_concept_id: int = 0,
+        visit_occurrence_id: int | None = None,
+    ) -> int:
+        obs_id = int(observation_id or self._next_id("observation_id"))
+        self._rows["observation"].append(
+            {
+                "observation_id": obs_id,
+                "person_id": int(person_id),
+                "observation_concept_id": int(observation_concept_id),
+                "observation_date": observation_date,
+                "value_as_number": float(value_as_number) if value_as_number is not None else None,
+                "value_as_concept_id": int(value_as_concept_id),
+                "unit_concept_id": int(unit_concept_id),
+                "observation_type_concept_id": int(observation_type_concept_id),
+                "visit_occurrence_id": int(visit_occurrence_id or 0),
+            }
+        )
+        return obs_id
+
     def materialize(self, con: ibis.BaseBackend) -> None:
         # Create all tables touched by rows, plus ensure required tables exist as empty.
         for name in sorted(OMOP_SCHEMAS.keys()):

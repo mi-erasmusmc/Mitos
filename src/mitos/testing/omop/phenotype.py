@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from mitos.cohort_expression import CohortExpression
-from mitos.tables import parse_single_criteria, ConditionOccurrence, Measurement
+from mitos.tables import parse_single_criteria, ConditionOccurrence, Measurement, Observation
 
 
 @dataclass(frozen=True)
@@ -133,5 +133,26 @@ def generate_event_for_correlated_criteria(
             },
         )
 
-    return None
+    if isinstance(criteria_model, Observation):
+        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        if codeset_id is None or codeset_id not in codeset_map:
+            return None
+        concept_id = codeset_map[codeset_id]
+        unit_id = 0
+        if getattr(criteria_model, "unit", None):
+            for u in criteria_model.unit:
+                if u.concept_id is not None:
+                    unit_id = int(u.concept_id)
+                    break
+        value = pick_value_for_numeric_range(getattr(criteria_model, "value_as_number", None))
+        return GeneratedEvent(
+            kind="observation",
+            payload={
+                "observation_concept_id": concept_id,
+                "observation_date": event_date,
+                "value_as_number": value,
+                "unit_concept_id": unit_id,
+            },
+        )
 
+    return None

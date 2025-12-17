@@ -33,6 +33,7 @@ def test_phenotype_216_synthetic_dataset_expected_people_and_censoring():
 
         assert expectations.include_person_ids.issubset(got_people)
         assert got_people.isdisjoint(expectations.exclude_person_ids)
+        assert expectations.neutrophil_cells_unit_fail_person_id not in got_people
 
         # Washout person has 2 index events; only 1 should remain after inclusion rules.
         washout_count = int((df["person_id"] == expectations.washout_person_id).sum())
