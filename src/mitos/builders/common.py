@@ -37,20 +37,20 @@ def standardize_output(
     end_column: str,
 ) -> ir.Table:
     """Project and rename columns to the strict builder output contract."""
-    start_expr = table[start_column]
+    start_expr = table[start_column].cast("timestamp")
     same_column = end_column == start_column
     if same_column:
         end_expr = start_expr
         needs_offset = ibis.literal(True)
     elif end_column in table.columns:
-        end_raw = table[end_column]
-        end_expr = ibis.coalesce(end_raw, start_expr)
+        end_raw = table[end_column].cast("timestamp")
+        end_expr = ibis.coalesce(end_raw, start_expr).cast("timestamp")
         needs_offset = end_raw.isnull()
     else:
         end_expr = start_expr
         needs_offset = ibis.literal(True)
     one_day = ibis.interval(days=1)
-    end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr)
+    end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr).cast("timestamp")
     visit_expr = (
         table.visit_occurrence_id.cast("int64")
         if "visit_occurrence_id" in table.columns

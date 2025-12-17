@@ -11,12 +11,13 @@ from mitos.tables import (
     Measurement,
     Observation,
     VisitOccurrence,
+    Death,
 )
 
 
 @dataclass(frozen=True)
 class GeneratedEvent:
-    kind: str  # "condition_occurrence" | "measurement" | "observation" | "visit_occurrence"
+    kind: str  # "condition_occurrence" | "measurement" | "observation" | "visit_occurrence" | "death"
     payload: dict[str, Any]
 
 
@@ -186,6 +187,19 @@ def generate_event_for_correlated_criteria(
                 "observation_date": event_date,
                 "value_as_number": value,
                 "unit_concept_id": unit_id,
+            },
+        )
+
+    if isinstance(criteria_model, Death):
+        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        if codeset_id is None or codeset_id not in codeset_map:
+            return None
+        concept_id = codeset_map[codeset_id]
+        return GeneratedEvent(
+            kind="death",
+            payload={
+                "death_date": event_date,
+                "cause_concept_id": concept_id,
             },
         )
 

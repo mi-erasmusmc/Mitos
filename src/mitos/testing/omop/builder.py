@@ -229,6 +229,23 @@ class OmopBuilder:
         )
         return obs_id
 
+    def add_death(
+        self,
+        *,
+        person_id: int,
+        death_date: date,
+        cause_concept_id: int = 0,
+        death_type_concept_id: int = 0,
+    ) -> None:
+        self._rows["death"].append(
+            {
+                "person_id": int(person_id),
+                "cause_concept_id": int(cause_concept_id),
+                "death_date": death_date,
+                "death_type_concept_id": int(death_type_concept_id),
+            }
+        )
+
     def materialize(self, con: ibis.BaseBackend) -> None:
         # Create all tables touched by rows, plus ensure required tables exist as empty.
         for name in sorted(OMOP_SCHEMAS.keys()):

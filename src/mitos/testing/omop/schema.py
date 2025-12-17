@@ -101,6 +101,7 @@ OMOP_SCHEMAS: Mapping[str, Mapping[str, str]] = {
     },
     "death": {
         "person_id": "int64",
+        "cause_concept_id": "int64",
         "death_date": "date",
         "death_type_concept_id": "int64",
     },
@@ -140,4 +141,3 @@ OMOP_SCHEMAS: Mapping[str, Mapping[str, str]] = {
         "invalid_reason": "string",
     },
 }
-
