@@ -73,6 +73,7 @@ class BaseProfile(BaseModel):
     # Prefer lazy (non-materialized) expressions by default for portability/perf.
     python_materialize_stages: bool = False
     python_materialize_codesets: bool = True
+    trace_subjects_from: Literal["both", "missing-in-circe", "missing-in-python"] = "both"
 
     @model_validator(mode="after")
     def set_defaults(self) -> "BaseProfile":
@@ -1133,6 +1134,16 @@ def parse_args():
         help="Max number of subject_ids to include in per-stage subset counts.",
     )
     parser.add_argument(
+        "--trace-subjects-from",
+        choices=("both", "missing-in-circe", "missing-in-python"),
+        default="both",
+        help=(
+            "When diffing, choose traced subject_ids from a specific diff side. "
+            "'missing-in-circe' traces subjects present in Python but absent in Circe; "
+            "'missing-in-python' traces subjects present in Circe but absent in Python."
+        ),
+    )
+    parser.add_argument(
         "--diff-report",
         action="store_true",
         help="Print a copy/paste-friendly triage report for diffing subjects (implies --diff).",
@@ -1306,21 +1317,22 @@ def main():
 
                 if args.trace_stages and (a or b):
                     ids_a = (
-                        missing_in_python.select(missing_in_python.subject_id)
-                        .distinct()
-                        .limit(args.trace_subject_limit)
-                        .execute()
+                        missing_in_python.select(missing_in_python.subject_id).distinct().execute()
                     )
                     ids_b = (
-                        missing_in_circe.select(missing_in_circe.subject_id)
-                        .distinct()
-                        .limit(args.trace_subject_limit)
-                        .execute()
+                        missing_in_circe.select(missing_in_circe.subject_id).distinct().execute()
                     )
-                    diff_subject_ids = [int(v) for v in ids_a["subject_id"].tolist()] + [
-                        int(v) for v in ids_b["subject_id"].tolist()
-                    ]
-                    diff_subject_ids = sorted(set(diff_subject_ids))
+                    ids_missing_in_python = [int(v) for v in ids_a["subject_id"].tolist()]
+                    ids_missing_in_circe = [int(v) for v in ids_b["subject_id"].tolist()]
+
+                    if args.trace_subjects_from == "missing-in-circe":
+                        diff_subject_ids = ids_missing_in_circe
+                    elif args.trace_subjects_from == "missing-in-python":
+                        diff_subject_ids = ids_missing_in_python
+                    else:
+                        diff_subject_ids = ids_missing_in_python + ids_missing_in_circe
+
+                    diff_subject_ids = sorted(set(diff_subject_ids))[: int(args.trace_subject_limit)]
             except Exception as e:
                 print(f"Warning: failed to compute diffs: {e}", file=sys.stderr)
             finally:
@@ -1398,6 +1410,9 @@ def main():
                         return None
 
                     py_primary = _last_matching("_stage_primary_events_")
+                    py_src1 = _last_matching("_stage_primary_src_1_")
+                    py_src2 = _last_matching("_stage_primary_src_2_")
+                    py_src3 = _last_matching("_stage_primary_src_3_")
                     py_hits = _last_matching("_stage_inclusion_hits_")
                     py_inclusion = _last_matching("_stage_inclusion_")
                     if py_inclusion and "_stage_inclusion_hits_" in py_inclusion:
@@ -1417,6 +1432,35 @@ def main():
                             extra_columns_sql=", MIN(start_date) AS min_start, MAX(end_date) AS max_end",
                         )
                         print("[Trace][Py primary_events] person_id, n, min_start, max_end:", rows)
+
+                    # Primary criteria source breakdown: which primary branch produced events for these subjects?
+                    try:
+                        if py_src1 or py_src2 or py_src3:
+                            src_counts: dict[str, dict[int, int]] = {"src1": {}, "src2": {}, "src3": {}}
+                            for label, table in (("src1", py_src1), ("src2", py_src2), ("src3", py_src3)):
+                                if not table:
+                                    continue
+                                q = qualify_identifier_for_backend(table, cfg.temp_schema, cfg.backend)
+                                rows = _sql_person_summary(
+                                    con,
+                                    q,
+                                    id_column="person_id",
+                                    ids=diff_subject_ids,
+                                )
+                                src_counts[label] = {int(pid): int(n) for pid, n in rows}
+
+                            print(
+                                "[Report][Py primary source breakdown] person_id\tprimary_src_1_n\tprimary_src_2_n\tprimary_src_3_n"
+                            )
+                            for pid in diff_subject_ids:
+                                print(
+                                    f"{pid}\t{src_counts['src1'].get(pid, 0)}\t{src_counts['src2'].get(pid, 0)}\t{src_counts['src3'].get(pid, 0)}"
+                                )
+                    except Exception as e:
+                        print(
+                            f"Warning: failed to compute python primary source breakdown: {e}",
+                            file=sys.stderr,
+                        )
                     if py_hits:
                         q = qualify_identifier_for_backend(py_hits, cfg.temp_schema, cfg.backend)
                         id_list = ", ".join(str(int(v)) for v in diff_subject_ids)

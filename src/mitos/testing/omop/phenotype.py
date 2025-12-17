@@ -5,12 +5,18 @@ from datetime import date, timedelta
 from typing import Any
 
 from mitos.cohort_expression import CohortExpression
-from mitos.tables import parse_single_criteria, ConditionOccurrence, Measurement, Observation
+from mitos.tables import (
+    parse_single_criteria,
+    ConditionOccurrence,
+    Measurement,
+    Observation,
+    VisitOccurrence,
+)
 
 
 @dataclass(frozen=True)
 class GeneratedEvent:
-    kind: str  # "condition_occurrence" or "measurement"
+    kind: str  # "condition_occurrence" | "measurement" | "observation" | "visit_occurrence"
     payload: dict[str, Any]
 
 
@@ -91,6 +97,34 @@ def generate_event_for_correlated_criteria(
     criteria_model = parse_single_criteria(correlated.criteria)
 
     event_date = choose_date_in_start_window(index_date, correlated.start_window)
+
+    if isinstance(criteria_model, VisitOccurrence):
+        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        if codeset_id is None or codeset_id not in codeset_map:
+            return None
+        concept_id = codeset_map[codeset_id]
+
+        correlated_events: list[GeneratedEvent] = []
+        group = getattr(criteria_model, "correlated_criteria", None)
+        if group and getattr(group, "criteria_list", None):
+            for nested in group.criteria_list or []:
+                nested_ev = generate_event_for_correlated_criteria(
+                    nested,
+                    index_date=event_date,
+                    codeset_map=codeset_map,
+                )
+                if nested_ev is not None:
+                    correlated_events.append(nested_ev)
+
+        return GeneratedEvent(
+            kind="visit_occurrence",
+            payload={
+                "visit_concept_id": concept_id,
+                "visit_start_date": event_date,
+                "visit_end_date": event_date + timedelta(days=1),
+                "correlated_events": correlated_events,
+            },
+        )
 
     if isinstance(criteria_model, ConditionOccurrence):
         codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
