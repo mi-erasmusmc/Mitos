@@ -30,9 +30,19 @@ def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
     table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
 
-    table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
-    if criteria.visit_type_exclude:
-        table = apply_concept_filters(table, "visit_concept_id", criteria.visit_type, exclude=True)
+    if criteria.visit_type:
+        table = apply_concept_filters(
+            table,
+            "visit_type_concept_id",
+            criteria.visit_type,
+            exclude=bool(criteria.visit_type_exclude),
+        )
+    table = apply_concept_set_selection(
+        table,
+        "visit_type_concept_id",
+        criteria.visit_type_cs,
+        ctx,
+    )
 
     table = apply_provider_specialty_filter(
         table,
@@ -50,7 +60,7 @@ def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
 
     if criteria.visit_source_concept is not None:
-        table = table.filter(table.visit_source_concept_id == criteria.visit_source_concept)
+        table = apply_codeset_filter(table, "visit_source_concept_id", criteria.visit_source_concept, ctx)
 
     if criteria.first:
         table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())

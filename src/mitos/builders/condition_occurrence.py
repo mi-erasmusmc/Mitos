@@ -41,18 +41,20 @@ def build_condition_occurrence(criteria: ConditionOccurrence, ctx: BuildContext)
 
     if criteria.condition_type:
         table = apply_concept_filters(
-            table, "condition_type_concept_id", criteria.condition_type
+            table,
+            "condition_type_concept_id",
+            criteria.condition_type,
+            exclude=bool(criteria.condition_type_exclude),
         )
     table = apply_concept_set_selection(
         table, "condition_type_concept_id", criteria.condition_type_cs, ctx
     )
 
-    if criteria.condition_type_exclude:
+    if getattr(criteria, "condition_status", None):
         table = apply_concept_filters(
             table,
-            "condition_type_concept_id",
-            criteria.condition_type or [],
-            exclude=True,
+            "condition_status_concept_id",
+            criteria.condition_status,
         )
 
     if criteria.age:
@@ -79,12 +81,15 @@ def build_condition_occurrence(criteria: ConditionOccurrence, ctx: BuildContext)
     )
     if needs_visit_filters:
         visit = ctx.table("visit_occurrence").select(
+            "person_id",
             "visit_occurrence_id",
             "visit_concept_id",
             "visit_source_concept_id",
         )
         table = table.join(
-            visit, table.visit_occurrence_id == visit.visit_occurrence_id
+            visit,
+            (table.visit_occurrence_id == visit.visit_occurrence_id)
+            & (table.person_id == visit.person_id),
         )
         table = apply_visit_concept_filters(
             table, criteria.visit_type, criteria.visit_type_cs, ctx

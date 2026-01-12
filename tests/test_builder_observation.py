@@ -10,7 +10,7 @@ from mitos.tables import Observation
 
 
 def make_context(conn):
-    codeset_expr = ibis.memtable({"codeset_id": [1], "concept_id": [301]})
+    codeset_expr = ibis.memtable({"codeset_id": [1, 2], "concept_id": [301, 10]})
     name = f"codesets_{uuid.uuid4().hex}"
     conn.create_table(name, codeset_expr, temp=True)
     return BuildContext(conn, CohortBuildOptions(), conn.table(name))
@@ -65,7 +65,7 @@ def test_observation_filters_source_concept():
     conn.create_table("observation", observation_df, overwrite=True)
 
     ctx = make_context(conn)
-    criteria = Observation(**{"CodesetId": 1, "ObservationSourceConcept": 10})
+    criteria = Observation(**{"CodesetId": 1, "ObservationSourceConcept": 2})
 
     events = build_events(criteria, ctx)
     df = events.to_polars()

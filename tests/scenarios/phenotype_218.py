@@ -229,4 +229,3 @@ def build_fake_omop_for_phenotype_218(
         no_hosp_fail_person_id=no_hosp_fail_person,
     )
     return expression, expectations
-

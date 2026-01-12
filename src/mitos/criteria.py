@@ -218,7 +218,7 @@ def to_snake_case(name: str) -> str:
 
 
 class Criteria(BaseModel):
-    model_config = ConfigDict(populate_by_name=False)
+    model_config = ConfigDict(populate_by_name=False, extra="forbid")
 
     correlated_criteria: CriteriaGroup = Field(default=None, alias="CorrelatedCriteria")
     date_adjustment: DateAdjustment = Field(default=None, alias="DateAdjustment")

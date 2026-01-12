@@ -50,7 +50,12 @@ def build_specimen(criteria: Specimen, ctx: BuildContext):
 
     table = apply_text_filter(table, "specimen_source_id", criteria.source_id)
     if criteria.specimen_source_concept is not None:
-        table = table.filter(table.specimen_source_concept_id == int(criteria.specimen_source_concept))
+        table = apply_codeset_filter(
+            table,
+            "specimen_source_concept_id",
+            criteria.specimen_source_concept,
+            ctx,
+        )
 
     if criteria.age:
         table = apply_age_filter(table, criteria.age, ctx, "specimen_date")

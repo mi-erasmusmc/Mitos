@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_serializer
+from pydantic import BaseModel, Field, ConfigDict, field_serializer, AliasChoices
 from typing import Optional, Any, Union
 
 from .criteria import (
@@ -86,13 +86,19 @@ class DrugExposure(Criteria):
     drug_type_exclude: Optional[bool] = Field(default=None, alias="DrugTypeExclude")
     route_concept: list[Concept] = Field(default_factory=list, alias="RouteConcept")
     route_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="RouteConceptCS")
+    effective_drug_dose: Optional[NumericRange] = Field(default=None, alias="EffectiveDrugDose")
+    dose_unit: list[Concept] = Field(default_factory=list, alias="DoseUnit")
+    dose_unit_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DoseUnitCS")
     quantity: Optional[NumericRange] = Field(default=None, alias="Quantity")
     days_supply: Optional[NumericRange] = Field(default=None, alias="DaysSupply")
     refills: Optional[NumericRange] = Field(default=None, alias="Refills")
     stop_reason: Optional[TextFilter] = Field(default=None, alias="StopReason")
+    lot_number: Optional[TextFilter] = Field(default=None, alias="LotNumber")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty: list[Concept] = Field(default_factory=list, alias="ProviderSpecialty")
+    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     drug_source_concept: Optional[int] = Field(default=None, alias="DrugSourceConcept")
@@ -135,7 +141,16 @@ class Measurement(Criteria):
     measurement_type: list[Concept] = Field(default_factory=list, alias="MeasurementType")
     measurement_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="MeasurementTypeCS")
     measurement_type_exclude: Optional[bool] = Field(default=None, alias="MeasurementTypeExclude")
-    operator_concept: list[Concept] = Field(default_factory=list, alias="OperatorConcept")
+    operator_concept: list[Concept] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("OperatorConcept", "Operator"),
+        serialization_alias="Operator",
+    )
+    operator_concept_cs: Optional[ConceptSetSelection] = Field(
+        default=None,
+        validation_alias=AliasChoices("OperatorConceptCS", "OperatorCS"),
+        serialization_alias="OperatorCS",
+    )
     value_as_number: Optional[NumericRange] = Field(default=None, alias="ValueAsNumber")
     value_as_concept: list[Concept] = Field(default_factory=list, alias="ValueAsConcept")
     value_as_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ValueAsConceptCS")
@@ -145,9 +160,12 @@ class Measurement(Criteria):
     range_high: Optional[NumericRange] = Field(default=None, alias="RangeHigh")
     range_low_ratio: Optional[NumericRange] = Field(default=None, alias="RangeLowRatio")
     range_high_ratio: Optional[NumericRange] = Field(default=None, alias="RangeHighRatio")
+    abnormal: Optional[bool] = Field(default=None, alias="Abnormal")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty: list[Concept] = Field(default_factory=list, alias="ProviderSpecialty")
+    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     measurement_source_concept: Optional[int] = Field(default=None, alias="MeasurementSourceConcept")
@@ -176,10 +194,12 @@ class Observation(Criteria):
     value_as_number: Optional[NumericRange] = Field(default=None, alias="ValueAsNumber")
     value_as_concept: list[Concept] = Field(default_factory=list, alias="ValueAsConcept")
     value_as_concept_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ValueAsConceptCS")
-    value_as_string: Optional[str] = Field(default=None, alias="ValueAsString")
+    value_as_string: Optional[TextFilter] = Field(default=None, alias="ValueAsString")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty: list[Concept] = Field(default_factory=list, alias="ProviderSpecialty")
+    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     observation_source_concept: Optional[int] = Field(default=None, alias="ObservationSourceConcept")
@@ -202,9 +222,12 @@ class DeviceExposure(Criteria):
     device_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DeviceTypeCS")
     device_type_exclude: Optional[bool] = Field(default=None, alias="DeviceTypeExclude")
     quantity: Optional[NumericRange] = Field(default=None, alias="Quantity")
+    unique_device_id: Optional[TextFilter] = Field(default=None, alias="UniqueDeviceId")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty: list[Concept] = Field(default_factory=list, alias="ProviderSpecialty")
+    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     device_source_concept: Optional[int] = Field(default=None, alias="DeviceSourceConcept")
@@ -232,6 +255,8 @@ class ProcedureOccurrence(Criteria):
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")
+    provider_specialty: list[Concept] = Field(default_factory=list, alias="ProviderSpecialty")
+    provider_specialty_cs: Optional[ConceptSetSelection] = Field(default=None, alias="ProviderSpecialtyCS")
     visit_type: list[Concept] = Field(default_factory=list, alias="VisitType")
     visit_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="VisitTypeCS")
     procedure_source_concept: Optional[int] = Field(default=None, alias="ProcedureSourceConcept")
@@ -353,9 +378,11 @@ class Death(Criteria):
     model_config = ConfigDict(populate_by_name=True)
 
     codeset_id: Optional[int] = Field(default=None, alias="CodesetId")
+    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="OccurrenceStartDate")
     death_type: list[Concept] = Field(default_factory=list, alias="DeathType")
     death_type_exclude: Optional[bool] = Field(default=None, alias="DeathTypeExclude")
     death_type_cs: Optional[ConceptSetSelection] = Field(default=None, alias="DeathTypeCS")
+    death_source_concept: Optional[int] = Field(default=None, alias="DeathSourceConcept")
     age: Optional[NumericRange] = Field(default=None, alias="Age")
     gender: list[Concept] = Field(default_factory=list, alias="Gender")
     gender_cs: Optional[ConceptSetSelection] = Field(default=None, alias="GenderCS")

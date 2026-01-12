@@ -36,7 +36,8 @@ from .tables import (
 class ResultLimit(BaseModel):
     model_config = ConfigDict(populate_by_name=False)
 
-    type: str = Field(default="All", alias="Type")
+    # Circe defaults to "First" when `ResultLimit` is omitted in JSON.
+    type: str = Field(default="First", alias="Type")
 
 
 class ObservationFilter(BaseModel):

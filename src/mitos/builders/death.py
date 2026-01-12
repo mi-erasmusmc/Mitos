@@ -9,6 +9,7 @@ from mitos.builders.common import (
     apply_codeset_filter,
     apply_concept_filters,
     apply_concept_set_selection,
+    apply_date_range,
     apply_gender_filter,
     standardize_output,
 )
@@ -21,9 +22,25 @@ def build_death(criteria: Death, ctx: BuildContext):
     table = ctx.table("death")
 
     table = apply_codeset_filter(table, "cause_concept_id", criteria.codeset_id, ctx)
+
+    table = apply_date_range(table, "death_date", getattr(criteria, "occurrence_start_date", None))
+
     if criteria.death_type:
-        table = apply_concept_filters(table, "death_type_concept_id", criteria.death_type)
+        table = apply_concept_filters(
+            table,
+            "death_type_concept_id",
+            criteria.death_type,
+            exclude=bool(getattr(criteria, "death_type_exclude", False)),
+        )
     table = apply_concept_set_selection(table, "death_type_concept_id", criteria.death_type_cs, ctx)
+
+    if getattr(criteria, "death_source_concept", None) is not None:
+        table = apply_codeset_filter(
+            table,
+            "cause_source_concept_id",
+            int(criteria.death_source_concept),
+            ctx,
+        )
 
     if criteria.age:
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())

@@ -369,6 +369,7 @@ def test_qualified_limit_is_ignored_to_match_circe():
                 "PrimaryCriteriaLimit": {"Type": "All"},
             },
             "QualifiedLimit": {"Type": "First"},
+            "ExpressionLimit": {"Type": "All"},
         }
     )
     expression.collapse_settings = None

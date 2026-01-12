@@ -12,6 +12,7 @@ from mitos.builders.common import (
     apply_first_event,
     apply_gender_filter,
     apply_numeric_range,
+    apply_provider_specialty_filter,
     apply_visit_concept_filters,
     standardize_output,
 )
@@ -32,10 +33,17 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
 
     if criteria.measurement_type:
-        table = apply_concept_filters(table, "measurement_type_concept_id", criteria.measurement_type)
+        table = apply_concept_filters(
+            table,
+            "measurement_type_concept_id",
+            criteria.measurement_type,
+            exclude=bool(criteria.measurement_type_exclude),
+        )
     table = apply_concept_set_selection(table, "measurement_type_concept_id", criteria.measurement_type_cs, ctx)
-    if criteria.measurement_type_exclude:
-        table = apply_concept_filters(table, "measurement_type_concept_id", criteria.measurement_type, exclude=True)
+
+    if getattr(criteria, "operator_concept", None):
+        table = apply_concept_filters(table, "operator_concept_id", criteria.operator_concept)
+    table = apply_concept_set_selection(table, "operator_concept_id", getattr(criteria, "operator_concept_cs", None), ctx)
 
     value_column = "value_as_number"
     if criteria.unit:
@@ -61,16 +69,32 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
         table = table.mutate(_range_high_ratio=ratio)
         table = apply_numeric_range(table, "_range_high_ratio", criteria.range_high_ratio)
 
+    if getattr(criteria, "abnormal", None):
+        abnormal_predicate = (
+            (table.value_as_number < table.range_low)
+            | (table.value_as_number > table.range_high)
+            | table.value_as_concept_id.isin([4155142, 4155143])
+        )
+        table = table.filter(abnormal_predicate)
+
     if criteria.age:
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+    table = apply_provider_specialty_filter(
+        table,
+        getattr(criteria, "provider_specialty", None),
+        getattr(criteria, "provider_specialty_cs", None),
+        ctx,
+        provider_column="provider_id",
+    )
     table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
-    source_concept = getattr(criteria, "measurement_source_concept", None)
-    if source_concept is not None:
-        if hasattr(source_concept, "codeset_id"):
-            table = apply_concept_set_selection(table, "measurement_source_concept_id", source_concept, ctx)
-        else:
-            table = table.filter(table.measurement_source_concept_id == int(source_concept))
+    if criteria.measurement_source_concept is not None:
+        table = apply_codeset_filter(
+            table,
+            "measurement_source_concept_id",
+            criteria.measurement_source_concept,
+            ctx,
+        )
 
     events = standardize_output(
         table,

@@ -11,12 +11,12 @@ from mitos.builders.common import (
     apply_first_event,
     apply_gender_filter,
     apply_numeric_range,
+    apply_provider_specialty_filter,
     apply_visit_concept_filters,
     standardize_output,
 )
 from mitos.builders.registry import register
 from mitos.builders.groups import apply_criteria_group
-from mitos.criteria import ConceptSetSelection
 
 
 @register("ProcedureOccurrence")
@@ -32,10 +32,13 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
     table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
 
     if criteria.procedure_type:
-        table = apply_concept_filters(table, "procedure_type_concept_id", criteria.procedure_type)
+        table = apply_concept_filters(
+            table,
+            "procedure_type_concept_id",
+            criteria.procedure_type,
+            exclude=bool(criteria.procedure_type_exclude),
+        )
     table = apply_concept_set_selection(table, "procedure_type_concept_id", criteria.procedure_type_cs, ctx)
-    if criteria.procedure_type_exclude:
-        table = apply_concept_filters(table, "procedure_type_concept_id", criteria.procedure_type, exclude=True)
 
     if criteria.modifier:
         table = apply_concept_filters(table, "modifier_concept_id", criteria.modifier)
@@ -46,15 +49,17 @@ def build_procedure_occurrence(criteria: ProcedureOccurrence, ctx: BuildContext)
     if criteria.age:
         table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
+    table = apply_provider_specialty_filter(
+        table,
+        getattr(criteria, "provider_specialty", None),
+        getattr(criteria, "provider_specialty_cs", None),
+        ctx,
+        provider_column="provider_id",
+    )
     table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
 
-    source_filter = getattr(criteria, "procedure_source_concept", None)
-    if source_filter is not None:
-        if isinstance(source_filter, ConceptSetSelection):
-            selection = source_filter
-        else:
-            selection = ConceptSetSelection(CodesetId=int(source_filter))
-        table = apply_concept_set_selection(table, "procedure_source_concept_id", selection, ctx)
+    if criteria.procedure_source_concept is not None:
+        table = apply_codeset_filter(table, "procedure_source_concept_id", criteria.procedure_source_concept, ctx)
 
     events = standardize_output(
         table,
