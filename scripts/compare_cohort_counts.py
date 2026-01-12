@@ -33,6 +33,7 @@ from pydantic import (
 from mitos.build_context import BuildContext, CohortBuildOptions, compile_codesets
 from mitos.builders.pipeline import build_primary_events
 from mitos.cohort_expression import CohortExpression
+from mitos.sql_split import split_sql_statements
 
 
 IbisConnection = Any
@@ -555,65 +556,7 @@ def _extract_circe_select_for_explain(sql_script: str) -> str | None:
 
 
 def _split_sql_statements(sql_script: str) -> list[str]:
-    statements: list[str] = []
-    current: list[str] = []
-    in_single = in_double = in_backtick = False
-    in_line_comment = in_block_comment = False
-    escape = False
-    i = 0
-    n = len(sql_script)
-    while i < n:
-        ch = sql_script[i]
-        nxt = sql_script[i + 1] if i + 1 < n else ""
-        current.append(ch)
-        if in_line_comment:
-            if ch == "\n":
-                in_line_comment = False
-            i += 1
-            continue
-
-        if in_block_comment:
-            if ch == "*" and nxt == "/":
-                current.append(nxt)
-                in_block_comment = False
-                i += 2
-                continue
-            i += 1
-            continue
-
-        if not (in_single or in_double or in_backtick):
-            if ch == "-" and nxt == "-":
-                current.append(nxt)
-                in_line_comment = True
-                i += 2
-                continue
-            if ch == "/" and nxt == "*":
-                current.append(nxt)
-                in_block_comment = True
-                i += 2
-                continue
-
-        if ch == "\\" and not escape:
-            escape = True
-            i += 1
-            continue
-
-        if ch == "'" and not (in_double or in_backtick) and not escape:
-            in_single = not in_single
-        elif ch == '"' and not (in_single or in_backtick) and not escape:
-            in_double = not in_double
-        elif ch == "`" and not (in_single or in_double) and not escape:
-            in_backtick = not in_backtick
-        elif ch == ";" and not (in_single or in_double or in_backtick):
-            if s := "".join(current).strip():
-                statements.append(s[:-1].strip())
-            current = []
-
-        escape = False
-        i += 1
-    if s := "".join(current).strip():
-        statements.append(s)
-    return statements
+    return split_sql_statements(sql_script)
 
 
 def run_python_pipeline(
