@@ -23,6 +23,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+uv-cache/
 
 # Virtual environments
 .venv/
@@ -103,5 +104,16 @@ Thumbs.db
 
 fixtures/
 cohorts/
+circe-be/
+profiles/
+reports/
+sql/
+report_sweep*.json
+output.json
+debug_pending.sql
+plan*.md
+parity_plan.md
+main.R
+report.md
 
 profiles.yaml
