@@ -1,0 +1,1598 @@
+{
+  "CohortExpression": [
+    {
+      "java_field": "additionalCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "AdditionalCriteria"
+    },
+    {
+      "java_field": "censorWindow",
+      "java_type": "Period",
+      "json_property": "CensorWindow"
+    },
+    {
+      "java_field": "censoringCriteria",
+      "java_type": "Criteria[]",
+      "json_property": "CensoringCriteria"
+    },
+    {
+      "java_field": "collapseSettings",
+      "java_type": "CollapseSettings",
+      "json_property": "CollapseSettings"
+    },
+    {
+      "java_field": "conceptSets",
+      "java_type": "ConceptSet[]",
+      "json_property": "ConceptSets"
+    },
+    {
+      "java_field": "endStrategy",
+      "java_type": "EndStrategy",
+      "json_property": "EndStrategy"
+    },
+    {
+      "java_field": "expressionLimit",
+      "java_type": "ResultLimit",
+      "json_property": "ExpressionLimit"
+    },
+    {
+      "java_field": "inclusionRules",
+      "java_type": "List",
+      "json_property": "InclusionRules"
+    },
+    {
+      "java_field": "primaryCriteria",
+      "java_type": "PrimaryCriteria",
+      "json_property": "PrimaryCriteria"
+    },
+    {
+      "java_field": "qualifiedLimit",
+      "java_type": "ResultLimit",
+      "json_property": "QualifiedLimit"
+    },
+    {
+      "java_field": "title",
+      "java_type": "String",
+      "json_property": "Title"
+    }
+  ],
+  "CollapseSettings": [
+    {
+      "java_field": "collapseType",
+      "java_type": "CollapseType",
+      "json_property": "CollapseType"
+    },
+    {
+      "java_field": "eraPad",
+      "java_type": "int",
+      "json_property": "EraPad"
+    }
+  ],
+  "ConceptSetSelection": [
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "isExclusion",
+      "java_type": "Boolean",
+      "json_property": "IsExclusion"
+    }
+  ],
+  "ConditionEra": [
+    {
+      "java_field": "ageAtEnd",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtEnd"
+    },
+    {
+      "java_field": "ageAtStart",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtStart"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "eraEndDate",
+      "java_type": "DateRange",
+      "json_property": "EraEndDate"
+    },
+    {
+      "java_field": "eraLength",
+      "java_type": "NumericRange",
+      "json_property": "EraLength"
+    },
+    {
+      "java_field": "eraStartDate",
+      "java_type": "DateRange",
+      "json_property": "EraStartDate"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceCount",
+      "java_type": "NumericRange",
+      "json_property": "OccurrenceCount"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "ConditionOccurrence": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "conditionSourceConcept",
+      "java_type": "Integer",
+      "json_property": "ConditionSourceConcept"
+    },
+    {
+      "java_field": "conditionStatus",
+      "java_type": "Concept[]",
+      "json_property": "ConditionStatus"
+    },
+    {
+      "java_field": "conditionType",
+      "java_type": "Concept[]",
+      "json_property": "ConditionType"
+    },
+    {
+      "java_field": "conditionTypeExclude",
+      "java_type": "Boolean",
+      "json_property": "ConditionTypeExclude"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceEndDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceEndDate"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "stopReason",
+      "java_type": "TextFilter",
+      "json_property": "StopReason"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "CorelatedCriteria": [
+    {
+      "java_field": "occurrence",
+      "java_type": "Occurrence",
+      "json_property": "Occurrence"
+    },
+    {
+      "java_field": "criteria",
+      "java_type": "Criteria",
+      "json_property": "Criteria"
+    },
+    {
+      "java_field": "endWindow",
+      "java_type": "Window",
+      "json_property": "EndWindow"
+    },
+    {
+      "java_field": "ignoreObservationPeriod",
+      "java_type": "boolean",
+      "json_property": "IgnoreObservationPeriod"
+    },
+    {
+      "java_field": "restrictVisit",
+      "java_type": "boolean",
+      "json_property": "RestrictVisit"
+    },
+    {
+      "java_field": "startWindow",
+      "java_type": "Window",
+      "json_property": "StartWindow"
+    }
+  ],
+  "Criteria": [
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "CriteriaGroup": [
+    {
+      "java_field": "count",
+      "java_type": "Integer",
+      "json_property": "Count"
+    },
+    {
+      "java_field": "criteriaList",
+      "java_type": "CorelatedCriteria[]",
+      "json_property": "CriteriaList"
+    },
+    {
+      "java_field": "demographicCriteriaList",
+      "java_type": "DemographicCriteria[]",
+      "json_property": "DemographicCriteriaList"
+    },
+    {
+      "java_field": "groups",
+      "java_type": "CriteriaGroup[]",
+      "json_property": "Groups"
+    },
+    {
+      "java_field": "type",
+      "java_type": "String",
+      "json_property": "Type"
+    }
+  ],
+  "CustomEraStrategy": [
+    {
+      "java_field": "daysSupplyOverride",
+      "java_type": "Integer",
+      "json_property": "DaysSupplyOverride"
+    },
+    {
+      "java_field": "drugCodesetId",
+      "java_type": "Integer",
+      "json_property": "DrugCodesetId"
+    },
+    {
+      "java_field": "gapDays",
+      "java_type": "int",
+      "json_property": "GapDays"
+    },
+    {
+      "java_field": "offset",
+      "java_type": "int",
+      "json_property": "Offset"
+    }
+  ],
+  "DateAdjustment": [
+    {
+      "java_field": "endOffset",
+      "java_type": "int",
+      "json_property": "EndOffset"
+    },
+    {
+      "java_field": "endWith",
+      "java_type": "DateAdjustment$DateType",
+      "json_property": "EndWith"
+    },
+    {
+      "java_field": "startOffset",
+      "java_type": "int",
+      "json_property": "StartOffset"
+    },
+    {
+      "java_field": "startWith",
+      "java_type": "DateAdjustment$DateType",
+      "json_property": "StartWith"
+    }
+  ],
+  "DateOffsetStrategy": [
+    {
+      "java_field": "dateField",
+      "java_type": "DateOffsetStrategy$DateField",
+      "json_property": "DateField"
+    },
+    {
+      "java_field": "offset",
+      "java_type": "int",
+      "json_property": "Offset"
+    }
+  ],
+  "DateRange": [
+    {
+      "java_field": "extent",
+      "java_type": "String",
+      "json_property": "Extent"
+    },
+    {
+      "java_field": "op",
+      "java_type": "String",
+      "json_property": "Op"
+    },
+    {
+      "java_field": "value",
+      "java_type": "String",
+      "json_property": "Value"
+    }
+  ],
+  "Death": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "deathSourceConcept",
+      "java_type": "Integer",
+      "json_property": "DeathSourceConcept"
+    },
+    {
+      "java_field": "deathType",
+      "java_type": "Concept[]",
+      "json_property": "DeathType"
+    },
+    {
+      "java_field": "deathTypeExclude",
+      "java_type": "boolean",
+      "json_property": "DeathTypeExclude"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "DemographicCriteria": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "ethnicity",
+      "java_type": "Concept[]",
+      "json_property": "Ethnicity"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceEndDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceEndDate"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "race",
+      "java_type": "Concept[]",
+      "json_property": "Race"
+    }
+  ],
+  "DeviceExposure": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "deviceSourceConcept",
+      "java_type": "Integer",
+      "json_property": "DeviceSourceConcept"
+    },
+    {
+      "java_field": "deviceType",
+      "java_type": "Concept[]",
+      "json_property": "DeviceType"
+    },
+    {
+      "java_field": "deviceTypeExclude",
+      "java_type": "boolean",
+      "json_property": "DeviceTypeExclude"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceEndDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceEndDate"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "quantity",
+      "java_type": "NumericRange",
+      "json_property": "Quantity"
+    },
+    {
+      "java_field": "uniqueDeviceId",
+      "java_type": "TextFilter",
+      "json_property": "UniqueDeviceId"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "DoseEra": [
+    {
+      "java_field": "ageAtEnd",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtEnd"
+    },
+    {
+      "java_field": "ageAtStart",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtStart"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "doseValue",
+      "java_type": "NumericRange",
+      "json_property": "DoseValue"
+    },
+    {
+      "java_field": "eraEndDate",
+      "java_type": "DateRange",
+      "json_property": "EraEndDate"
+    },
+    {
+      "java_field": "eraLength",
+      "java_type": "NumericRange",
+      "json_property": "EraLength"
+    },
+    {
+      "java_field": "eraStartDate",
+      "java_type": "DateRange",
+      "json_property": "EraStartDate"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "unit",
+      "java_type": "Concept[]",
+      "json_property": "Unit"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "DrugEra": [
+    {
+      "java_field": "ageAtEnd",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtEnd"
+    },
+    {
+      "java_field": "ageAtStart",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtStart"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "eraEndDate",
+      "java_type": "DateRange",
+      "json_property": "EraEndDate"
+    },
+    {
+      "java_field": "eraLength",
+      "java_type": "NumericRange",
+      "json_property": "EraLength"
+    },
+    {
+      "java_field": "eraStartDate",
+      "java_type": "DateRange",
+      "json_property": "EraStartDate"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gapDays",
+      "java_type": "NumericRange",
+      "json_property": "GapDays"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceCount",
+      "java_type": "NumericRange",
+      "json_property": "OccurrenceCount"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "DrugExposure": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "daysSupply",
+      "java_type": "NumericRange",
+      "json_property": "DaysSupply"
+    },
+    {
+      "java_field": "doseUnit",
+      "java_type": "Concept[]",
+      "json_property": "DoseUnit"
+    },
+    {
+      "java_field": "drugSourceConcept",
+      "java_type": "Integer",
+      "json_property": "DrugSourceConcept"
+    },
+    {
+      "java_field": "drugType",
+      "java_type": "Concept[]",
+      "json_property": "DrugType"
+    },
+    {
+      "java_field": "drugTypeExclude",
+      "java_type": "boolean",
+      "json_property": "DrugTypeExclude"
+    },
+    {
+      "java_field": "effectiveDrugDose",
+      "java_type": "NumericRange",
+      "json_property": "EffectiveDrugDose"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "lotNumber",
+      "java_type": "TextFilter",
+      "json_property": "LotNumber"
+    },
+    {
+      "java_field": "occurrenceEndDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceEndDate"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "quantity",
+      "java_type": "NumericRange",
+      "json_property": "Quantity"
+    },
+    {
+      "java_field": "refills",
+      "java_type": "NumericRange",
+      "json_property": "Refills"
+    },
+    {
+      "java_field": "routeConcept",
+      "java_type": "Concept[]",
+      "json_property": "RouteConcept"
+    },
+    {
+      "java_field": "stopReason",
+      "java_type": "TextFilter",
+      "json_property": "StopReason"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "GeoCriteria": [
+    {
+      "java_field": "endDate",
+      "java_type": "DateRange",
+      "json_property": "EndDate"
+    },
+    {
+      "java_field": "startDate",
+      "java_type": "DateRange",
+      "json_property": "StartDate"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "LocationRegion": [
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "endDate",
+      "java_type": "DateRange",
+      "json_property": "EndDate"
+    },
+    {
+      "java_field": "startDate",
+      "java_type": "DateRange",
+      "json_property": "StartDate"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "Measurement": [
+    {
+      "java_field": "abnormal",
+      "java_type": "Boolean",
+      "json_property": "Abnormal"
+    },
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "measurementSourceConcept",
+      "java_type": "Integer",
+      "json_property": "MeasurementSourceConcept"
+    },
+    {
+      "java_field": "measurementType",
+      "java_type": "Concept[]",
+      "json_property": "MeasurementType"
+    },
+    {
+      "java_field": "measurementTypeExclude",
+      "java_type": "boolean",
+      "json_property": "MeasurementTypeExclude"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "operator",
+      "java_type": "Concept[]",
+      "json_property": "Operator"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "rangeHigh",
+      "java_type": "NumericRange",
+      "json_property": "RangeHigh"
+    },
+    {
+      "java_field": "rangeHighRatio",
+      "java_type": "NumericRange",
+      "json_property": "RangeHighRatio"
+    },
+    {
+      "java_field": "rangeLow",
+      "java_type": "NumericRange",
+      "json_property": "RangeLow"
+    },
+    {
+      "java_field": "rangeLowRatio",
+      "java_type": "NumericRange",
+      "json_property": "RangeLowRatio"
+    },
+    {
+      "java_field": "unit",
+      "java_type": "Concept[]",
+      "json_property": "Unit"
+    },
+    {
+      "java_field": "valueAsConcept",
+      "java_type": "Concept[]",
+      "json_property": "ValueAsConcept"
+    },
+    {
+      "java_field": "valueAsNumber",
+      "java_type": "NumericRange",
+      "json_property": "ValueAsNumber"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "NumericRange": [
+    {
+      "java_field": "extent",
+      "java_type": "Number",
+      "json_property": "Extent"
+    },
+    {
+      "java_field": "op",
+      "java_type": "String",
+      "json_property": "Op"
+    },
+    {
+      "java_field": "value",
+      "java_type": "Number",
+      "json_property": "Value"
+    }
+  ],
+  "Observation": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "observationSourceConcept",
+      "java_type": "Integer",
+      "json_property": "ObservationSourceConcept"
+    },
+    {
+      "java_field": "observationType",
+      "java_type": "Concept[]",
+      "json_property": "ObservationType"
+    },
+    {
+      "java_field": "observationTypeExclude",
+      "java_type": "boolean",
+      "json_property": "ObservationTypeExclude"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "qualifier",
+      "java_type": "Concept[]",
+      "json_property": "Qualifier"
+    },
+    {
+      "java_field": "unit",
+      "java_type": "Concept[]",
+      "json_property": "Unit"
+    },
+    {
+      "java_field": "valueAsConcept",
+      "java_type": "Concept[]",
+      "json_property": "ValueAsConcept"
+    },
+    {
+      "java_field": "valueAsNumber",
+      "java_type": "NumericRange",
+      "json_property": "ValueAsNumber"
+    },
+    {
+      "java_field": "valueAsString",
+      "java_type": "TextFilter",
+      "json_property": "ValueAsString"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "ObservationFilter": [
+    {
+      "java_field": "postDays",
+      "java_type": "int",
+      "json_property": "PostDays"
+    },
+    {
+      "java_field": "priorDays",
+      "java_type": "int",
+      "json_property": "PriorDays"
+    }
+  ],
+  "ObservationPeriod": [
+    {
+      "java_field": "ageAtEnd",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtEnd"
+    },
+    {
+      "java_field": "ageAtStart",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtStart"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "periodEndDate",
+      "java_type": "DateRange",
+      "json_property": "PeriodEndDate"
+    },
+    {
+      "java_field": "periodLength",
+      "java_type": "NumericRange",
+      "json_property": "PeriodLength"
+    },
+    {
+      "java_field": "periodStartDate",
+      "java_type": "DateRange",
+      "json_property": "PeriodStartDate"
+    },
+    {
+      "java_field": "periodType",
+      "java_type": "Concept[]",
+      "json_property": "PeriodType"
+    },
+    {
+      "java_field": "userDefinedPeriod",
+      "java_type": "Period",
+      "json_property": "UserDefinedPeriod"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "Occurrence": [
+    {
+      "java_field": "count",
+      "java_type": "int",
+      "json_property": "Count"
+    },
+    {
+      "java_field": "countColumn",
+      "java_type": "CriteriaColumn",
+      "json_property": "CountColumn"
+    },
+    {
+      "java_field": "isDistinct",
+      "java_type": "boolean",
+      "json_property": "IsDistinct"
+    },
+    {
+      "java_field": "type",
+      "java_type": "int",
+      "json_property": "Type"
+    }
+  ],
+  "OutcomeCohortExpression": [
+    {
+      "java_field": "detectOnDescendants",
+      "java_type": "Boolean",
+      "json_property": "detectOnDescendants"
+    },
+    {
+      "java_field": "domains",
+      "java_type": "List",
+      "json_property": "domains"
+    },
+    {
+      "java_field": "occurrenceType",
+      "java_type": "OccurrenceType",
+      "json_property": "occurrenceType"
+    }
+  ],
+  "PayerPlanPeriod": [
+    {
+      "java_field": "ageAtEnd",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtEnd"
+    },
+    {
+      "java_field": "ageAtStart",
+      "java_type": "NumericRange",
+      "json_property": "AgeAtStart"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "payerConcept",
+      "java_type": "Integer",
+      "json_property": "PayerConcept"
+    },
+    {
+      "java_field": "payerSourceConcept",
+      "java_type": "Integer",
+      "json_property": "PayerSourceConcept"
+    },
+    {
+      "java_field": "periodEndDate",
+      "java_type": "DateRange",
+      "json_property": "PeriodEndDate"
+    },
+    {
+      "java_field": "periodLength",
+      "java_type": "NumericRange",
+      "json_property": "PeriodLength"
+    },
+    {
+      "java_field": "periodStartDate",
+      "java_type": "DateRange",
+      "json_property": "PeriodStartDate"
+    },
+    {
+      "java_field": "planConcept",
+      "java_type": "Integer",
+      "json_property": "PlanConcept"
+    },
+    {
+      "java_field": "planSourceConcept",
+      "java_type": "Integer",
+      "json_property": "PlanSourceConcept"
+    },
+    {
+      "java_field": "sponsorConcept",
+      "java_type": "Integer",
+      "json_property": "SponsorConcept"
+    },
+    {
+      "java_field": "sponsorSourceConcept",
+      "java_type": "Integer",
+      "json_property": "SponsorSourceConcept"
+    },
+    {
+      "java_field": "stopReasonConcept",
+      "java_type": "Integer",
+      "json_property": "StopReasonConcept"
+    },
+    {
+      "java_field": "stopReasonSourceConcept",
+      "java_type": "Integer",
+      "json_property": "StopReasonSourceConcept"
+    },
+    {
+      "java_field": "userDefinedPeriod",
+      "java_type": "Period",
+      "json_property": "UserDefinedPeriod"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "Period": [
+    {
+      "java_field": "endDate",
+      "java_type": "String",
+      "json_property": "EndDate"
+    },
+    {
+      "java_field": "startDate",
+      "java_type": "String",
+      "json_property": "StartDate"
+    }
+  ],
+  "PrimaryCriteria": [
+    {
+      "java_field": "criteriaList",
+      "java_type": "Criteria[]",
+      "json_property": "CriteriaList"
+    },
+    {
+      "java_field": "observationWindow",
+      "java_type": "ObservationFilter",
+      "json_property": "ObservationWindow"
+    },
+    {
+      "java_field": "primaryLimit",
+      "java_type": "ResultLimit",
+      "json_property": "PrimaryCriteriaLimit"
+    }
+  ],
+  "ProcedureOccurrence": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "modifier",
+      "java_type": "Concept[]",
+      "json_property": "Modifier"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "procedureSourceConcept",
+      "java_type": "Integer",
+      "json_property": "ProcedureSourceConcept"
+    },
+    {
+      "java_field": "procedureType",
+      "java_type": "Concept[]",
+      "json_property": "ProcedureType"
+    },
+    {
+      "java_field": "procedureTypeExclude",
+      "java_type": "boolean",
+      "json_property": "ProcedureTypeExclude"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "quantity",
+      "java_type": "NumericRange",
+      "json_property": "Quantity"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "ResultLimit": [
+    {
+      "java_field": "type",
+      "java_type": "String",
+      "json_property": "Type"
+    }
+  ],
+  "Specimen": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "anatomicSite",
+      "java_type": "Concept[]",
+      "json_property": "AnatomicSite"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "diseaseStatus",
+      "java_type": "Concept[]",
+      "json_property": "DiseaseStatus"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "quantity",
+      "java_type": "NumericRange",
+      "json_property": "Quantity"
+    },
+    {
+      "java_field": "sourceId",
+      "java_type": "TextFilter",
+      "json_property": "SourceId"
+    },
+    {
+      "java_field": "specimenSourceConcept",
+      "java_type": "Integer",
+      "json_property": "SpecimenSourceConcept"
+    },
+    {
+      "java_field": "specimenType",
+      "java_type": "Concept[]",
+      "json_property": "SpecimenType"
+    },
+    {
+      "java_field": "specimenTypeExclude",
+      "java_type": "boolean",
+      "json_property": "SpecimenTypeExclude"
+    },
+    {
+      "java_field": "unit",
+      "java_type": "Concept[]",
+      "json_property": "Unit"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "TextFilter": [
+    {
+      "java_field": "op",
+      "java_type": "String",
+      "json_property": "Op"
+    },
+    {
+      "java_field": "text",
+      "java_type": "String",
+      "json_property": "Text"
+    }
+  ],
+  "VisitDetail": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "genderCS",
+      "java_type": "ConceptSetSelection",
+      "json_property": "GenderCS"
+    },
+    {
+      "java_field": "placeOfServiceCS",
+      "java_type": "ConceptSetSelection",
+      "json_property": "PlaceOfServiceCS"
+    },
+    {
+      "java_field": "placeOfServiceLocation",
+      "java_type": "Integer",
+      "json_property": "PlaceOfServiceLocation"
+    },
+    {
+      "java_field": "providerSpecialtyCS",
+      "java_type": "ConceptSetSelection",
+      "json_property": "ProviderSpecialtyCS"
+    },
+    {
+      "java_field": "visitDetailEndDate",
+      "java_type": "DateRange",
+      "json_property": "VisitDetailEndDate"
+    },
+    {
+      "java_field": "visitDetailLength",
+      "java_type": "NumericRange",
+      "json_property": "VisitDetailLength"
+    },
+    {
+      "java_field": "visitDetailSourceConcept",
+      "java_type": "Integer",
+      "json_property": "VisitDetailSourceConcept"
+    },
+    {
+      "java_field": "visitDetailStartDate",
+      "java_type": "DateRange",
+      "json_property": "VisitDetailStartDate"
+    },
+    {
+      "java_field": "visitDetailTypeCS",
+      "java_type": "ConceptSetSelection",
+      "json_property": "VisitDetailTypeCS"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "VisitOccurrence": [
+    {
+      "java_field": "age",
+      "java_type": "NumericRange",
+      "json_property": "Age"
+    },
+    {
+      "java_field": "codesetId",
+      "java_type": "Integer",
+      "json_property": "CodesetId"
+    },
+    {
+      "java_field": "first",
+      "java_type": "Boolean",
+      "json_property": "First"
+    },
+    {
+      "java_field": "gender",
+      "java_type": "Concept[]",
+      "json_property": "Gender"
+    },
+    {
+      "java_field": "occurrenceEndDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceEndDate"
+    },
+    {
+      "java_field": "occurrenceStartDate",
+      "java_type": "DateRange",
+      "json_property": "OccurrenceStartDate"
+    },
+    {
+      "java_field": "placeOfService",
+      "java_type": "Concept[]",
+      "json_property": "PlaceOfService"
+    },
+    {
+      "java_field": "placeOfServiceLocation",
+      "java_type": "Integer",
+      "json_property": "PlaceOfServiceLocation"
+    },
+    {
+      "java_field": "providerSpecialty",
+      "java_type": "Concept[]",
+      "json_property": "ProviderSpecialty"
+    },
+    {
+      "java_field": "visitLength",
+      "java_type": "NumericRange",
+      "json_property": "VisitLength"
+    },
+    {
+      "java_field": "visitSourceConcept",
+      "java_type": "Integer",
+      "json_property": "VisitSourceConcept"
+    },
+    {
+      "java_field": "visitType",
+      "java_type": "Concept[]",
+      "json_property": "VisitType"
+    },
+    {
+      "java_field": "visitTypeExclude",
+      "java_type": "boolean",
+      "json_property": "VisitTypeExclude"
+    },
+    {
+      "java_field": "CorrelatedCriteria",
+      "java_type": "CriteriaGroup",
+      "json_property": "CorrelatedCriteria"
+    },
+    {
+      "java_field": "dateAdjustment",
+      "java_type": "DateAdjustment",
+      "json_property": "DateAdjustment"
+    }
+  ],
+  "Window": [
+    {
+      "java_field": "end",
+      "java_type": "Window$Endpoint",
+      "json_property": "End"
+    },
+    {
+      "java_field": "start",
+      "java_type": "Window$Endpoint",
+      "json_property": "Start"
+    },
+    {
+      "java_field": "useEventEnd",
+      "java_type": "Boolean",
+      "json_property": "UseEventEnd"
+    },
+    {
+      "java_field": "useIndexEnd",
+      "java_type": "Boolean",
+      "json_property": "UseIndexEnd"
+    }
+  ],
+  "WindowedCriteria": [
+    {
+      "java_field": "criteria",
+      "java_type": "Criteria",
+      "json_property": "Criteria"
+    },
+    {
+      "java_field": "endWindow",
+      "java_type": "Window",
+      "json_property": "EndWindow"
+    },
+    {
+      "java_field": "ignoreObservationPeriod",
+      "java_type": "boolean",
+      "json_property": "IgnoreObservationPeriod"
+    },
+    {
+      "java_field": "restrictVisit",
+      "java_type": "boolean",
+      "json_property": "RestrictVisit"
+    },
+    {
+      "java_field": "startWindow",
+      "java_type": "Window",
+      "json_property": "StartWindow"
+    }
+  ]
+}
