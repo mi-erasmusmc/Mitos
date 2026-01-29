@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1.7
+
+ARG UV_VERSION=0.8.22
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
+FROM python:3.12.12-slim-bookworm
+
+ARG DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+COPY --from=uv /uv /uvx /usr/local/bin/
+
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y --no-install-recommends \
+      ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_NO_INSTALLER_METADATA=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:${PATH}"
+
+WORKDIR /workspace
+
+# Copy only dependency metadata first for good layer caching.
+COPY pyproject.toml uv.lock README.md /workspace/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable --no-install-project --extra postgres
+
+# Copy project code (container is standalone; profiles.yaml and data are mounted at runtime).
+COPY src /workspace/src
+COPY scripts /workspace/scripts
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable --extra postgres
+
+CMD ["bash"]
