@@ -28,6 +28,10 @@ duckdb = [
 databricks = [
   "ibis-framework[databricks]>=11.0.0",
 ]
+postgres = [
+  "ibis-framework[postgres]>=11.0.0",
+  "psycopg[binary]>=3.2.0",
+]
 
 [project.scripts]
 Mitos = "mitos.cli:main"

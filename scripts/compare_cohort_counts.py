@@ -168,8 +168,49 @@ class DatabricksProfile(BaseProfile):
         return params
 
 
+class PostgresProfile(BaseProfile):
+    """Specific Validation for Postgres Profiles."""
+
+    backend: Literal["postgres"]
+
+    host: str
+    port: int = 5432
+    user: str
+    password: SecretStr | None = None
+    database: str
+
+    sslmode: str | None = None
+    connect_timeout: int | None = None
+
+    @model_validator(mode="after")
+    def validate_password(self) -> "PostgresProfile":
+        if self.password is not None:
+            val = self.password.get_secret_value()
+            if val.startswith("${"):
+                raise ValueError(
+                    f"The password appears to be an unresolved variable: '{val}'. "
+                    "Ensure it is set via environment variable expansion in your profiles.yaml."
+                )
+        return self
+
+    def get_ibis_connection_params(self) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "host": self.host,
+            "port": int(self.port),
+            "user": self.user,
+            "database": self.database,
+        }
+        if self.password is not None:
+            params["password"] = self.password.get_secret_value()
+        if self.sslmode is not None:
+            params["sslmode"] = self.sslmode
+        if self.connect_timeout is not None:
+            params["connect_timeout"] = int(self.connect_timeout)
+        return params
+
+
 AnyProfile = Annotated[
-    DuckDBProfile | DatabricksProfile, Field(discriminator="backend")
+    DuckDBProfile | DatabricksProfile | PostgresProfile, Field(discriminator="backend")
 ]
 
 
