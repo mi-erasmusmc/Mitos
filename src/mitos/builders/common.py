@@ -97,8 +97,9 @@ def apply_codeset_filter(
     if codeset_id is None:
         return table
     base_columns = table.columns
-    concepts = ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(codeset_id))
-    joined = table.join(concepts, [table[concept_column] == concepts["concept_id"]])
+    left = table.view()
+    concepts = ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(codeset_id)).view()
+    joined = left.join(concepts, [left[concept_column] == concepts["concept_id"]])
     return _project_columns(joined, base_columns)
 
 
@@ -110,10 +111,13 @@ def apply_concept_set_selection(
 ) -> ir.Table:
     if selection is None or selection.codeset_id is None:
         return table
-    codeset_table = ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(selection.codeset_id))
+    left = table.view()
+    codeset_table = (
+        ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(selection.codeset_id)).view()
+    )
     if selection.is_exclusion:
-        return table.anti_join(codeset_table, [table[column] == codeset_table.concept_id])
-    return table.join(codeset_table, [table[column] == codeset_table.concept_id])
+        return left.anti_join(codeset_table, [left[column] == codeset_table.concept_id])
+    return left.join(codeset_table, [left[column] == codeset_table.concept_id])
 
 
 

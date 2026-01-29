@@ -20,8 +20,17 @@ def table_from_literal_list(
     This avoids Databricks' memtable upload machinery (which depends on a writable
     Unity Catalog volume) while still producing a pure Ibis expression.
     """
+    values_list = list(values)
+    if not values_list:
+        dummy = ops.DummyTable(
+            values=FrozenOrderedDict(
+                {column_name: ibis.null().cast(element_type).op()}
+            )
+        ).to_expr()
+        return dummy.select(dummy[column_name]).filter(ibis.literal(False))
+
     array_type = f"array<{element_type}>"
-    arr = ibis.literal(list(values), type=array_type)
+    arr = ibis.literal(values_list, type=array_type)
 
     dummy = ops.DummyTable(values=FrozenOrderedDict({"__values__": arr.op()})).to_expr()
     unnested = ops.TableUnnest(
@@ -32,4 +41,3 @@ def table_from_literal_list(
         False,
     ).to_expr()
     return unnested.select(unnested[column_name])
-

@@ -111,10 +111,11 @@ def _correlated_mask(events: ir.Table, correlated: CorrelatedCriteria, ctx: Buil
 
     joined = index_events.join(criteria_events, join_condition, how="left")
 
-    count_expr = criteria_events._corr_event_id
+    corr_event_id = joined._corr_event_id
+    count_expr = corr_event_id
     if count_column_name and count_column_name in joined.columns:
         count_expr = joined[count_column_name]
-    match_expr = criteria_events._corr_event_id.notnull()
+    match_expr = corr_event_id.notnull()
     joined = joined.mutate(
         _corr_match_value=ibis.ifelse(match_expr, count_expr, ibis.null()),
     )
@@ -194,9 +195,12 @@ def _combine_any(masks: list[ir.Value]) -> ir.Value:
 
 
 def _combine_threshold(masks: list[ir.Value], threshold: int, *, at_least: bool) -> ir.Value:
-    total = masks[0].cast("int64")
+    def _to_int(mask: ir.Value) -> ir.Value:
+        return ibis.ifelse(mask, ibis.literal(1, type="int64"), ibis.literal(0, type="int64"))
+
+    total = _to_int(masks[0])
     for mask in masks[1:]:
-        total = total + mask.cast("int64")
+        total = total + _to_int(mask)
     return total >= threshold if at_least else total <= threshold
 
 
