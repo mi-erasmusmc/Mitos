@@ -15,7 +15,7 @@ from mitos.testing.omop.phenotype import (
 )
 
 
-PHENOTYPE_216_JSON = Path("cohorts/phenotype-216.json")
+PHENOTYPE_216_JSON = Path(__file__).resolve().parent / "phenotypes" / "phenotype-216.json"
 
 
 @dataclass(frozen=True)

@@ -12,7 +12,7 @@ from mitos.testing.omop.vocab import build_minimal_vocab
 from mitos.testing.omop.phenotype import codeset_to_concept_id, generate_event_for_correlated_criteria
 
 
-PHENOTYPE_218_JSON = Path("cohorts/phenotype-218.json")
+PHENOTYPE_218_JSON = Path(__file__).resolve().parent / "phenotypes" / "phenotype-218.json"
 
 
 @dataclass(frozen=True)
