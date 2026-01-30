@@ -74,7 +74,9 @@ def fieldcase_coverage_markdown(
 ) -> str:
     rows = list(coverage.values())
     missing = sorted([r for r in rows if not r.covered_by_cases], key=lambda r: r.key)
-    low = sorted([r for r in rows if 0 < len(r.covered_by_cases) < 2], key=lambda r: r.key)
+    low = sorted(
+        [r for r in rows if 0 < len(r.covered_by_cases) < 2], key=lambda r: r.key
+    )
 
     total = len(rows)
     covered = sum(1 for r in rows if r.covered_by_cases)

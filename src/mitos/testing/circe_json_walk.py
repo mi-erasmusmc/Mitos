@@ -41,7 +41,9 @@ def _inventory_index(
         for entry in fields:
             prop = entry["json_property"]
             java_type = entry["java_type"]
-            out_fields.append(CirceInventoryField(json_property=prop, java_type=java_type))
+            out_fields.append(
+                CirceInventoryField(json_property=prop, java_type=java_type)
+            )
 
             base = _base_java_type(java_type)
             if base in classes:

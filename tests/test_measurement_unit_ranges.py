@@ -43,12 +43,16 @@ def test_measurement_value_range_respects_unit_specific_thresholds_without_norma
     )
 
     # Empty codesets (we don't filter by codeset_id in this test).
-    empty_concepts = table_from_literal_list([], column_name="concept_id", element_type="int64")
+    empty_concepts = table_from_literal_list(
+        [], column_name="concept_id", element_type="int64"
+    )
     empty_codesets = empty_concepts.mutate(codeset_id=ibis.null().cast("int64")).select(
         "codeset_id", "concept_id"
     )
     codesets = CodesetResource(table=empty_codesets)
-    options = CohortBuildOptions(cdm_schema="main", vocabulary_schema="main", backend="duckdb")
+    options = CohortBuildOptions(
+        cdm_schema="main", vocabulary_schema="main", backend="duckdb"
+    )
     ctx = BuildContext(con, options, codesets)
     try:
         criteria = Measurement.model_validate(

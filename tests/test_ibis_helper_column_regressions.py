@@ -37,7 +37,11 @@ def test_attach_count_columns_does_not_leak_join_keys_into_materialize():
         schema={"person_id": "int64", "event_id": "int64", "start_date": "string"},
     )
 
-    ctx = BuildContext(conn, CohortBuildOptions(), ibis.memtable([], schema={"codeset_id": "int64", "concept_id": "int64"}))
+    ctx = BuildContext(
+        conn,
+        CohortBuildOptions(),
+        ibis.memtable([], schema={"codeset_id": "int64", "concept_id": "int64"}),
+    )
 
     augmented = _attach_count_columns(
         events,

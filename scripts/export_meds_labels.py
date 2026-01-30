@@ -18,25 +18,59 @@ from mitos.meds.task_labels import (
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Export PLP-style binary task labels in MEDS format.")
-    p.add_argument("--connection", required=True, help="Ibis connection string (e.g. duckdb:///path/db.duckdb).")
-    p.add_argument("--cdm-schema", default=None, help="OMOP CDM schema/database (ibis `database=`).")
-    p.add_argument("--vocab-schema", default=None, help="OMOP vocab schema/database (defaults to cdm-schema).")
+    p = argparse.ArgumentParser(
+        description="Export PLP-style binary task labels in MEDS format."
+    )
+    p.add_argument(
+        "--connection",
+        required=True,
+        help="Ibis connection string (e.g. duckdb:///path/db.duckdb).",
+    )
+    p.add_argument(
+        "--cdm-schema",
+        default=None,
+        help="OMOP CDM schema/database (ibis `database=`).",
+    )
+    p.add_argument(
+        "--vocab-schema",
+        default=None,
+        help="OMOP vocab schema/database (defaults to cdm-schema).",
+    )
 
-    p.add_argument("--target-json", required=True, help="ATLAS cohort JSON for the target/index cohort.")
-    p.add_argument("--outcome-json", required=True, help="ATLAS cohort JSON for the outcome cohort.")
+    p.add_argument(
+        "--target-json",
+        required=True,
+        help="ATLAS cohort JSON for the target/index cohort.",
+    )
+    p.add_argument(
+        "--outcome-json",
+        required=True,
+        help="ATLAS cohort JSON for the outcome cohort.",
+    )
 
     p.add_argument("--task-root", required=True, help="Root directory for MEDS tasks.")
-    p.add_argument("--task-name", required=True, help="Task name directory under task-root.")
-    p.add_argument("--overwrite", action="store_true", help="Overwrite existing task directory if present.")
-    p.add_argument("--shard-size", type=int, default=250_000, help="Rows per Parquet shard.")
+    p.add_argument(
+        "--task-name", required=True, help="Task name directory under task-root."
+    )
+    p.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing task directory if present.",
+    )
+    p.add_argument(
+        "--shard-size", type=int, default=250_000, help="Rows per Parquet shard."
+    )
 
     p.add_argument("--risk-window-start", type=int, default=1)
     p.add_argument("--risk-window-end", type=int, default=365)
     p.add_argument("--min-time-at-risk", type=int, default=None)
     p.add_argument("--washout-period", type=int, default=0)
     p.add_argument("--first-exposure-only", action="store_true")
-    p.add_argument("--keep-prior-outcomes", action="store_true", help="Do not remove subjects with prior outcomes.")
+    p.add_argument(
+        "--keep-prior-outcomes",
+        action="store_true",
+        help="Do not remove subjects with prior outcomes.",
+    )
     p.add_argument(
         "--include-all-outcomes",
         action="store_true",
@@ -53,8 +87,12 @@ def main(argv: list[str] | None = None) -> int:
         vocabulary_schema=args.vocab_schema,
     )
 
-    target_expr = CohortExpression.model_validate_json(Path(args.target_json).read_text(encoding="utf-8"))
-    outcome_expr = CohortExpression.model_validate_json(Path(args.outcome_json).read_text(encoding="utf-8"))
+    target_expr = CohortExpression.model_validate_json(
+        Path(args.target_json).read_text(encoding="utf-8")
+    )
+    outcome_expr = CohortExpression.model_validate_json(
+        Path(args.outcome_json).read_text(encoding="utf-8")
+    )
 
     target_codesets = compile_codesets(conn, target_expr.concept_sets, options)
     outcome_codesets = compile_codesets(conn, outcome_expr.concept_sets, options)
@@ -118,7 +156,11 @@ def main(argv: list[str] | None = None) -> int:
             overwrite=bool(args.overwrite),
             task_def=task_def,
         )
-        print(json.dumps({"task_dir": str(out_dir), "rows": int(labels_df.height)}, indent=2))  # noqa: T201
+        print(
+            json.dumps(
+                {"task_dir": str(out_dir), "rows": int(labels_df.height)}, indent=2
+            )
+        )  # noqa: T201
         return 0
     finally:
         ctx_outcome.close()

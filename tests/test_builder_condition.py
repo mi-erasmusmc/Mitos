@@ -8,6 +8,7 @@ from mitos.build_context import BuildContext, CohortBuildOptions
 from mitos.builders.registry import build_events
 from mitos.tables import ConditionOccurrence, ConditionEra
 
+
 def make_context(conn, codesets=None):
     if codesets is None:
         codesets = ibis.memtable({"codeset_id": [1], "concept_id": [101]})
@@ -70,8 +71,9 @@ def test_condition_first_requires_earliest_event_to_satisfy_date_filter():
     )
 
     events = build_events(criteria, ctx)
-    assert events.count().execute() == 0, "First event occurs before allowed window, so cohort should be empty"
-
+    assert events.count().execute() == 0, (
+        "First event occurs before allowed window, so cohort should be empty"
+    )
 
 
 def test_condition_occurrence_builder_filters_condition_source_concepts_by_codeset_id():
@@ -126,7 +128,9 @@ def test_condition_builder_applies_nested_correlated_criteria():
             "visit_occurrence_id": [1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -164,7 +168,9 @@ def test_condition_builder_applies_nested_correlated_criteria():
     events = build_events(criteria, ctx)
     result = events.to_polars()
 
-    assert result["event_id"].to_list() == [1], "Only events with matching measurements should remain"
+    assert result["event_id"].to_list() == [1], (
+        "Only events with matching measurements should remain"
+    )
 
 
 def test_condition_era_builder_filters_length_and_first():
@@ -179,13 +185,17 @@ def test_condition_era_builder_filters_length_and_first():
             "condition_occurrence_count": [1, 3],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     conn.create_table("condition_era", condition_era_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)
 
     codesets = ibis.memtable({"codeset_id": [1], "concept_id": [101]})
     ctx = make_context(conn, codesets)
-    criteria = ConditionEra(**{"CodesetId": 1, "EraLength": {"Value": 20, "Op": "gte"}, "First": True})
+    criteria = ConditionEra(
+        **{"CodesetId": 1, "EraLength": {"Value": 20, "Op": "gte"}, "First": True}
+    )
 
     events = build_events(criteria, ctx)
     result = events.to_polars()
@@ -194,7 +204,9 @@ def test_condition_era_builder_filters_length_and_first():
 
 
 def _codeset_table(pairs):
-    return ibis.memtable([{"codeset_id": cid, "concept_id": concept} for cid, concept in pairs])
+    return ibis.memtable(
+        [{"codeset_id": cid, "concept_id": concept} for cid, concept in pairs]
+    )
 
 
 def test_correlated_restrict_visit_requires_shared_visit_ids():
@@ -223,7 +235,9 @@ def test_correlated_restrict_visit_requires_shared_visit_ids():
             "visit_occurrence_id": [999],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]}
+    )
     observation_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -250,10 +264,15 @@ def test_correlated_restrict_visit_requires_shared_visit_ids():
     }
 
     unrestricted = ConditionOccurrence(
-        **{"CodesetId": 1, "CorrelatedCriteria": {"Type": "ALL", "CriteriaList": [base_correlated]}}
+        **{
+            "CodesetId": 1,
+            "CorrelatedCriteria": {"Type": "ALL", "CriteriaList": [base_correlated]},
+        }
     )
     result = build_events(unrestricted, ctx).to_polars()
-    assert result["event_id"].to_list() == [2], "Measurement should eliminate the matching visit when restrictVisit is off"
+    assert result["event_id"].to_list() == [2], (
+        "Measurement should eliminate the matching visit when restrictVisit is off"
+    )
 
 
 def test_condition_occurrence_visit_type_filters_join_visits():
@@ -284,7 +303,9 @@ def test_condition_occurrence_visit_type_filters_join_visits():
 
     codesets = _codeset_table([(1, 101), (2, 201)])
     ctx = make_context(conn, codesets)
-    criteria = ConditionOccurrence(**{"CodesetId": 1, "VisitType": [{"CONCEPT_ID": 201}]})
+    criteria = ConditionOccurrence(
+        **{"CodesetId": 1, "VisitType": [{"CONCEPT_ID": 201}]}
+    )
 
     result = build_events(criteria, ctx).to_polars()
     assert result["event_id"].to_list() == [1]
@@ -318,12 +339,16 @@ def test_condition_occurrence_visit_source_concept_filter():
 
     codesets = _codeset_table([(1, 101), (3, 102)])
     ctx = make_context(conn, codesets)
-    criteria = ConditionOccurrence.model_validate({"CodesetId": 1, "VisitSourceConcept": 999})
+    criteria = ConditionOccurrence.model_validate(
+        {"CodesetId": 1, "VisitSourceConcept": 999}
+    )
 
     result = build_events(criteria, ctx).to_polars()
     assert result["event_id"].to_list() == [1, 2]
 
-    criteria_source = ConditionOccurrence(**{"CodesetId": 1, "ConditionSourceConcept": {"CodesetId": 3}})
+    criteria_source = ConditionOccurrence(
+        **{"CodesetId": 1, "ConditionSourceConcept": {"CodesetId": 3}}
+    )
     result = build_events(criteria_source, ctx).to_polars()
     assert result.height == 0
 
@@ -344,7 +369,9 @@ def test_condition_occurrence_condition_source_concept_codeset():
 
     codesets = _codeset_table([(1, 101), (2, 1001)])
     ctx = make_context(conn, codesets)
-    criteria = ConditionOccurrence(**{"CodesetId": 1, "ConditionSourceConcept": {"CodesetId": 2}})
+    criteria = ConditionOccurrence(
+        **{"CodesetId": 1, "ConditionSourceConcept": {"CodesetId": 2}}
+    )
 
     result = build_events(criteria, ctx).to_polars()
     assert result["event_id"].to_list() == [1]
@@ -375,7 +402,9 @@ def test_correlated_ignore_observation_period_flag():
             "visit_occurrence_id": [10],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]}
+    )
     observation_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -402,11 +431,14 @@ def test_correlated_ignore_observation_period_flag():
     }
 
     default = ConditionOccurrence(
-        **{"CodesetId": 1, "CorrelatedCriteria": {"Type": "ALL", "CriteriaList": [correlated_block]}}
+        **{
+            "CodesetId": 1,
+            "CorrelatedCriteria": {"Type": "ALL", "CriteriaList": [correlated_block]},
+        }
     )
-    assert (
-        build_events(default, ctx).to_polars().shape[0] == 1
-    ), "Measurements outside observation periods should be ignored by default"
+    assert build_events(default, ctx).to_polars().shape[0] == 1, (
+        "Measurements outside observation periods should be ignored by default"
+    )
 
     ignore = ConditionOccurrence(
         **{
@@ -417,6 +449,6 @@ def test_correlated_ignore_observation_period_flag():
             },
         }
     )
-    assert (
-        build_events(ignore, ctx).to_polars().is_empty()
-    ), "Setting IgnoreObservationPeriod must consider measurements outside observation windows"
+    assert build_events(ignore, ctx).to_polars().is_empty(), (
+        "Setting IgnoreObservationPeriod must consider measurements outside observation windows"
+    )

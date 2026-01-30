@@ -247,8 +247,7 @@ TYPE_MAP = {
 
 def empty_table(schema: dict[str, str]) -> pl.DataFrame:
     columns = {
-        col: pl.Series([], dtype=TYPE_MAP[dtype])
-        for col, dtype in schema.items()
+        col: pl.Series([], dtype=TYPE_MAP[dtype]) for col, dtype in schema.items()
     }
     return pl.DataFrame(columns)
 
@@ -286,7 +285,9 @@ def gather_concept_ids(expression: CohortExpression):
     return ids
 
 
-@pytest.mark.parametrize("cohort_path", PHENOTYPE_SAMPLE, ids=[p.name for p in PHENOTYPE_SAMPLE])
+@pytest.mark.parametrize(
+    "cohort_path", PHENOTYPE_SAMPLE, ids=[p.name for p in PHENOTYPE_SAMPLE]
+)
 def test_pipeline_executes_for_sample_phenotypes(cohort_path: Path):
     expression = CohortExpression.model_validate_json(cohort_path.read_text())
     conn = ibis.duckdb.connect(database=":memory:")
@@ -300,4 +301,10 @@ def test_pipeline_executes_for_sample_phenotypes(cohort_path: Path):
     events = build_primary_events(expression, ctx)
     assert events is not None
     result = events.to_polars()
-    assert set(result.columns) == {"person_id", "event_id", "start_date", "end_date", "visit_occurrence_id"}
+    assert set(result.columns) == {
+        "person_id",
+        "event_id",
+        "start_date",
+        "end_date",
+        "visit_occurrence_id",
+    }

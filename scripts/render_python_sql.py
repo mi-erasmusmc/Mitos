@@ -13,15 +13,21 @@ from mitos.cohort_expression import CohortExpression
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Render Python cohort SQL for comparison with Circe.")
-    parser.add_argument("--json", required=True, help="Path to the cohort expression JSON file.")
+    parser = argparse.ArgumentParser(
+        description="Render Python cohort SQL for comparison with Circe."
+    )
+    parser.add_argument(
+        "--json", required=True, help="Path to the cohort expression JSON file."
+    )
     parser.add_argument(
         "--cdm-db",
         required=True,
         help="DuckDB database path (e.g., cdm.duckdb or :memory:). Must contain OMOP CDM tables.",
     )
     parser.add_argument("--cdm-schema", help="Name of the CDM schema (optional).")
-    parser.add_argument("--vocab-schema", help="Name of the vocabulary schema (optional).")
+    parser.add_argument(
+        "--vocab-schema", help="Name of the vocabulary schema (optional)."
+    )
     parser.add_argument(
         "--temp-schema",
         help="Optional schema to emulate temp tables (useful for backends without true TEMP support).",

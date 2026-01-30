@@ -16,10 +16,22 @@ from tests.scenarios.phenotype_216 import build_fake_omop_for_phenotype_216  # n
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a synthetic OMOP CDM DuckDB for a phenotype scenario.")
-    parser.add_argument("--out-db", required=True, help="Path to write the DuckDB database file.")
-    parser.add_argument("--schema", default="main", help="DuckDB schema/database name to write tables into.")
-    parser.add_argument("--phenotype", default="216", help="Phenotype id (currently only '216' supported).")
+    parser = argparse.ArgumentParser(
+        description="Generate a synthetic OMOP CDM DuckDB for a phenotype scenario."
+    )
+    parser.add_argument(
+        "--out-db", required=True, help="Path to write the DuckDB database file."
+    )
+    parser.add_argument(
+        "--schema",
+        default="main",
+        help="DuckDB schema/database name to write tables into.",
+    )
+    parser.add_argument(
+        "--phenotype",
+        default="216",
+        help="Phenotype id (currently only '216' supported).",
+    )
     return parser.parse_args()
 
 
@@ -31,7 +43,9 @@ def main() -> int:
     con = ibis.duckdb.connect(database=str(out_db))
     try:
         if args.phenotype != "216":
-            raise SystemExit("Only phenotype '216' is supported by this generator right now.")
+            raise SystemExit(
+                "Only phenotype '216' is supported by this generator right now."
+            )
         build_fake_omop_for_phenotype_216(con, schema=args.schema)
     finally:
         # Ibis backend objects don't always expose a uniform close() API.
@@ -46,15 +60,19 @@ def main() -> int:
 
     print(f"Wrote synthetic OMOP tables to: {out_db}")
     print("\nSuggested `profiles.yaml` snippet:")
-    print(f"""
+    print(
+        f"""
 fake_{args.phenotype}:
   backend: duckdb
   database: "{out_db}"
   read_only: false
-""".strip())
+""".strip()
+    )
     print()
     print("Run:")
-    print(f"  .venv/bin/python scripts/compare_cohort_counts.py --profile fake_{args.phenotype} --json cohorts/phenotype-{args.phenotype}.json")
+    print(
+        f"  .venv/bin/python scripts/compare_cohort_counts.py --profile fake_{args.phenotype} --json cohorts/phenotype-{args.phenotype}.json"
+    )
     return 0
 
 

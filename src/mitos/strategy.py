@@ -24,7 +24,9 @@ class CustomEraStrategy(BaseModel):
     drug_codeset_id: Optional[int] = Field(default=None, alias="DrugCodesetId")
     gap_days: int = Field(default=0, alias="GapDays")
     offset: int = Field(default=0, alias="Offset")
-    days_supply_override: Optional[int] = Field(default=None, alias="DaysSupplyOverride")
+    days_supply_override: Optional[int] = Field(
+        default=None, alias="DaysSupplyOverride"
+    )
 
 
 class EndStrategy(BaseModel):

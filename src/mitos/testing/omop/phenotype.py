@@ -100,7 +100,11 @@ def generate_event_for_correlated_criteria(
     event_date = choose_date_in_start_window(index_date, correlated.start_window)
 
     if isinstance(criteria_model, VisitOccurrence):
-        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        codeset_id = (
+            int(criteria_model.codeset_id)
+            if criteria_model.codeset_id is not None
+            else None
+        )
         if codeset_id is None or codeset_id not in codeset_map:
             return None
         concept_id = codeset_map[codeset_id]
@@ -128,7 +132,11 @@ def generate_event_for_correlated_criteria(
         )
 
     if isinstance(criteria_model, ConditionOccurrence):
-        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        codeset_id = (
+            int(criteria_model.codeset_id)
+            if criteria_model.codeset_id is not None
+            else None
+        )
         if codeset_id is None or codeset_id not in codeset_map:
             return None
         concept_id = codeset_map[codeset_id]
@@ -142,7 +150,11 @@ def generate_event_for_correlated_criteria(
         )
 
     if isinstance(criteria_model, Measurement):
-        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        codeset_id = (
+            int(criteria_model.codeset_id)
+            if criteria_model.codeset_id is not None
+            else None
+        )
         if codeset_id is None or codeset_id not in codeset_map:
             return None
         concept_id = codeset_map[codeset_id]
@@ -169,7 +181,11 @@ def generate_event_for_correlated_criteria(
         )
 
     if isinstance(criteria_model, Observation):
-        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        codeset_id = (
+            int(criteria_model.codeset_id)
+            if criteria_model.codeset_id is not None
+            else None
+        )
         if codeset_id is None or codeset_id not in codeset_map:
             return None
         concept_id = codeset_map[codeset_id]
@@ -179,7 +195,9 @@ def generate_event_for_correlated_criteria(
                 if u.concept_id is not None:
                     unit_id = int(u.concept_id)
                     break
-        value = pick_value_for_numeric_range(getattr(criteria_model, "value_as_number", None))
+        value = pick_value_for_numeric_range(
+            getattr(criteria_model, "value_as_number", None)
+        )
         return GeneratedEvent(
             kind="observation",
             payload={
@@ -191,7 +209,11 @@ def generate_event_for_correlated_criteria(
         )
 
     if isinstance(criteria_model, Death):
-        codeset_id = int(criteria_model.codeset_id) if criteria_model.codeset_id is not None else None
+        codeset_id = (
+            int(criteria_model.codeset_id)
+            if criteria_model.codeset_id is not None
+            else None
+        )
         if codeset_id is None or codeset_id not in codeset_map:
             return None
         concept_id = codeset_map[codeset_id]

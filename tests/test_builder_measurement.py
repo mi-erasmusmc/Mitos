@@ -8,6 +8,7 @@ from mitos.build_context import BuildContext, CohortBuildOptions
 from mitos.builders.registry import build_events
 from mitos.tables import Measurement
 
+
 def make_context(conn, codes, extra_codesets=None):
     rows = [{"codeset_id": 1, "concept_id": code} for code in codes]
     if extra_codesets:
@@ -101,7 +102,9 @@ def test_measurement_filters_source_concept():
     )
     conn.create_table("measurement", measurement_df, overwrite=True)
 
-    ctx = make_context(conn, [300], extra_codesets=[{"codeset_id": 2, "concept_id": 10}])
+    ctx = make_context(
+        conn, [300], extra_codesets=[{"codeset_id": 2, "concept_id": 10}]
+    )
     criteria = Measurement(
         **{
             "CodesetId": 1,

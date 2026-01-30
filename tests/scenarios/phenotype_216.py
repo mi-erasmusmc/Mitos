@@ -15,7 +15,9 @@ from mitos.testing.omop.phenotype import (
 )
 
 
-PHENOTYPE_216_JSON = Path(__file__).resolve().parent / "phenotypes" / "phenotype-216.json"
+PHENOTYPE_216_JSON = (
+    Path(__file__).resolve().parent / "phenotypes" / "phenotype-216.json"
+)
 
 
 @dataclass(frozen=True)
@@ -51,7 +53,9 @@ def build_fake_omop_for_phenotype_216(
     # Materialize minimal vocab so compile_codesets (and optional Circe SQL on DuckDB) can run.
     vocab = build_minimal_vocab(expression.concept_sets or [])
     con.create_table("concept", obj=vocab.concept, database=schema, overwrite=True)
-    con.create_table("concept_ancestor", obj=vocab.concept_ancestor, database=schema, overwrite=True)
+    con.create_table(
+        "concept_ancestor", obj=vocab.concept_ancestor, database=schema, overwrite=True
+    )
     con.create_table(
         "concept_relationship",
         obj=vocab.concept_relationship,
@@ -71,7 +75,9 @@ def build_fake_omop_for_phenotype_216(
     # Baseline passing person.
     passing_person = 1
     builder.add_person(person_id=passing_person)
-    builder.add_observation_period(person_id=passing_person, start_date=op_start, end_date=op_end)
+    builder.add_observation_period(
+        person_id=passing_person, start_date=op_start, end_date=op_end
+    )
     builder.add_condition_occurrence(
         person_id=passing_person,
         condition_concept_id=primary_concept,
@@ -82,7 +88,9 @@ def build_fake_omop_for_phenotype_216(
     # Washout: person has 2 index events within 365 days; only the first should survive rule 1.
     washout_person = 2
     builder.add_person(person_id=washout_person)
-    builder.add_observation_period(person_id=washout_person, start_date=op_start, end_date=op_end)
+    builder.add_observation_period(
+        person_id=washout_person, start_date=op_start, end_date=op_end
+    )
     builder.add_condition_occurrence(
         person_id=washout_person,
         condition_concept_id=primary_concept,
@@ -152,7 +160,9 @@ def build_fake_omop_for_phenotype_216(
     # Censoring: trigger censoring platelet measurement (>150) after index date.
     censor_person = 3
     builder.add_person(person_id=censor_person)
-    builder.add_observation_period(person_id=censor_person, start_date=op_start, end_date=op_end)
+    builder.add_observation_period(
+        person_id=censor_person, start_date=op_start, end_date=op_end
+    )
     builder.add_condition_occurrence(
         person_id=censor_person,
         condition_concept_id=primary_concept,
@@ -176,7 +186,9 @@ def build_fake_omop_for_phenotype_216(
     neutrophil_cells_unit_fail_person = 7
     builder.add_person(person_id=neutrophil_cells_unit_fail_person)
     builder.add_observation_period(
-        person_id=neutrophil_cells_unit_fail_person, start_date=op_start, end_date=op_end
+        person_id=neutrophil_cells_unit_fail_person,
+        start_date=op_start,
+        end_date=op_end,
     )
     builder.add_condition_occurrence(
         person_id=neutrophil_cells_unit_fail_person,
@@ -187,13 +199,22 @@ def build_fake_omop_for_phenotype_216(
     # Find the rule by name and use its 2nd correlated criterion (cells/uL branch).
     rule16 = None
     for rule in expression.inclusion_rules or []:
-        if (rule.name or "").strip().lower().startswith("no low neutrophil count within 7 days"):
+        if (
+            (rule.name or "")
+            .strip()
+            .lower()
+            .startswith("no low neutrophil count within 7 days")
+        ):
             rule16 = rule
             break
     if rule16 is None or not getattr(rule16.expression, "criteria_list", None):
-        raise RuntimeError("Phenotype-216: could not locate rule 16 (neutrophil) criteria list")
+        raise RuntimeError(
+            "Phenotype-216: could not locate rule 16 (neutrophil) criteria list"
+        )
     if len(rule16.expression.criteria_list) < 2:
-        raise RuntimeError("Phenotype-216: expected rule 16 to have multiple measurement criteria branches")
+        raise RuntimeError(
+            "Phenotype-216: expected rule 16 to have multiple measurement criteria branches"
+        )
     neutrophil_branch = rule16.expression.criteria_list[1]
     ev = generate_event_for_correlated_criteria(
         neutrophil_branch,
@@ -201,7 +222,9 @@ def build_fake_omop_for_phenotype_216(
         codeset_map=codeset_map,
     )
     if ev is None or ev.kind != "measurement":
-        raise RuntimeError("Phenotype-216: failed to synthesize neutrophil cells/uL measurement event")
+        raise RuntimeError(
+            "Phenotype-216: failed to synthesize neutrophil cells/uL measurement event"
+        )
     builder.add_measurement(
         person_id=neutrophil_cells_unit_fail_person,
         measurement_concept_id=ev.payload["measurement_concept_id"],
@@ -224,14 +247,18 @@ def build_fake_omop_for_phenotype_216(
         group = rule.expression
         correlated_list = list(getattr(group, "criteria_list", []) or [])
         if not correlated_list:
-            raise RuntimeError(f"Phenotype-216: rule {idx} has no correlated criteria: {rule.name!r}")
+            raise RuntimeError(
+                f"Phenotype-216: rule {idx} has no correlated criteria: {rule.name!r}"
+            )
 
         for correlated in correlated_list:
             person_id = next_fail_id
             next_fail_id += 1
             failing_people.append(person_id)
             builder.add_person(person_id=person_id)
-            builder.add_observation_period(person_id=person_id, start_date=op_start, end_date=op_end)
+            builder.add_observation_period(
+                person_id=person_id, start_date=op_start, end_date=op_end
+            )
             builder.add_condition_occurrence(
                 person_id=person_id,
                 condition_concept_id=primary_concept,

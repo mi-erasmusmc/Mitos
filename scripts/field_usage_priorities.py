@@ -24,7 +24,9 @@ def _priority_key(entry: dict[str, Any]) -> tuple[int, int, float, str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Rank Circe fields by risk based on sweep usage.")
+    parser = argparse.ArgumentParser(
+        description="Rank Circe fields by risk based on sweep usage."
+    )
     parser.add_argument(
         "--usage",
         type=Path,
@@ -64,14 +66,18 @@ def main(argv: list[str] | None = None) -> int:
     top = used_entries[: max(0, int(args.limit))]
 
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
-    args.out_json.write_text(json.dumps(top, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.out_json.write_text(
+        json.dumps(top, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
     lines: list[str] = []
     lines.append("# Field Usage Priorities")
     lines.append("")
     lines.append("Ranked from highest → lowest risk based on sweep usage.")
     lines.append("")
-    lines.append("| Field | used_in | nonzero_in_both | zero_in_both | coverage | examples (zero_in_both) |")
+    lines.append(
+        "| Field | used_in | nonzero_in_both | zero_in_both | coverage | examples (zero_in_both) |"
+    )
     lines.append("|---|---:|---:|---:|---:|---|")
     for e in top:
         used_in = int(e.get("used_in", 0))
@@ -80,7 +86,9 @@ def main(argv: list[str] | None = None) -> int:
         coverage = (nonzero_in_both / used_in) if used_in else 0.0
         examples = ", ".join((e.get("examples", {}) or {}).get("zero_in_both", [])[:5])
         field = str(e.get("key"))
-        lines.append(f"| `{field}` | {used_in} | {nonzero_in_both} | {zero_in_both} | {coverage:.3f} | {examples} |")
+        lines.append(
+            f"| `{field}` | {used_in} | {nonzero_in_both} | {zero_in_both} | {coverage:.3f} | {examples} |"
+        )
     args.out_md.parent.mkdir(parents=True, exist_ok=True)
     args.out_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return 0
@@ -88,4 +96,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

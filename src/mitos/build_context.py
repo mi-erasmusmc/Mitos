@@ -221,10 +221,14 @@ class BuildContext:
         """
         target_table = table_name or self._options.target_table
         if not target_table:
-            raise ValueError("target_table must be set (argument or CohortBuildOptions.target_table)")
+            raise ValueError(
+                "target_table must be set (argument or CohortBuildOptions.target_table)"
+            )
         target_db = database if database is not None else self._options.result_schema
         if target_db is None:
-            raise ValueError("result_schema must be set (argument or CohortBuildOptions.result_schema)")
+            raise ValueError(
+                "result_schema must be set (argument or CohortBuildOptions.result_schema)"
+            )
 
         cohort_id = self._options.cohort_id
         cohort_id_expr = (
@@ -423,7 +427,9 @@ def _compile_single_codeset(
 def _ids_memtable(ids: list[int]) -> Optional[ir.Table]:
     if not ids:
         return None
-    return table_from_literal_list(ids, column_name="concept_id", element_type="int64").distinct()
+    return table_from_literal_list(
+        ids, column_name="concept_id", element_type="int64"
+    ).distinct()
 
 
 def _descendants(
@@ -474,7 +480,9 @@ def _mapped_concepts(
 
 
 def _empty_codeset_table() -> ir.Table:
-    empty_concepts = table_from_literal_list([], column_name="concept_id", element_type="int64")
+    empty_concepts = table_from_literal_list(
+        [], column_name="concept_id", element_type="int64"
+    )
     empty_codesets = empty_concepts.mutate(
         codeset_id=ibis.null().cast("int64"),
     )
@@ -534,14 +542,18 @@ def _materialize_codesets(
     weakref.finalize(resource, resource.cleanup)
     return resource
 
+
 def _union_distinct(tables: Iterable[Optional[ir.Table]]) -> Optional[ir.Table]:
     valid_tables = [t for t in tables if t is not None]
     if not valid_tables:
         return None
 
     return reduce(
-        lambda left, right: left.union(right, distinct=True), valid_tables[1:], valid_tables[0]
+        lambda left, right: left.union(right, distinct=True),
+        valid_tables[1:],
+        valid_tables[0],
     )
+
 
 def _union_all(tables: list[ir.Table]) -> ir.Table:
     return reduce(lambda left, right: left.union(right), tables[1:], tables[0])

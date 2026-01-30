@@ -18,7 +18,8 @@ def test_standardize_output_casts_start_end_to_timestamp():
         ],
         schema={"person_id": "int64", "pk": "int64", "start_dt": "date"},
     )
-    out = standardize_output(t, primary_key="pk", start_column="start_dt", end_column="start_dt")
+    out = standardize_output(
+        t, primary_key="pk", start_column="start_dt", end_column="start_dt"
+    )
     assert str(out.schema()["start_date"]) == "timestamp"
     assert str(out.schema()["end_date"]) == "timestamp"
-

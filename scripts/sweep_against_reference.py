@@ -86,8 +86,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "(e.g. DuckDB/Circe counts), without requiring CirceR on the target system."
         )
     )
-    p.add_argument("--config", default="profiles.yaml", help="Path to profiles.yaml (read from CWD by default).")
-    p.add_argument("--profile", required=True, help="Profile name in profiles.yaml to use for execution.")
+    p.add_argument(
+        "--config",
+        default="profiles.yaml",
+        help="Path to profiles.yaml (read from CWD by default).",
+    )
+    p.add_argument(
+        "--profile",
+        required=True,
+        help="Profile name in profiles.yaml to use for execution.",
+    )
 
     p.add_argument(
         "--reference-report",
@@ -122,7 +130,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="report_sweep_postgres.json",
         help="Path to write the output JSON report.",
     )
-    p.add_argument("--python-stages", action="store_true", help="Enable python stage materialization.")
+    p.add_argument(
+        "--python-stages",
+        action="store_true",
+        help="Enable python stage materialization.",
+    )
     p.add_argument(
         "--inline-python-codesets",
         action="store_true",
@@ -162,8 +174,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.profile not in profiles_file.profiles:
         raise KeyError(f"Profile not found in {args.config}: {args.profile}")
     base_cfg = profiles_file.profiles[args.profile]
-    python_materialize_stages = bool(getattr(base_cfg, "python_materialize_stages", False)) or bool(args.python_stages)
-    python_materialize_codesets = bool(getattr(base_cfg, "python_materialize_codesets", True))
+    python_materialize_stages = bool(
+        getattr(base_cfg, "python_materialize_stages", False)
+    ) or bool(args.python_stages)
+    python_materialize_codesets = bool(
+        getattr(base_cfg, "python_materialize_codesets", True)
+    )
     if args.inline_python_codesets:
         python_materialize_codesets = False
 
@@ -189,10 +205,12 @@ def main(argv: list[str] | None = None) -> int:
                 "reference_json_path": ref.json_path,
             }
 
-            print(f"[{idx+1}/{total}] {ref.phenotype}", flush=True)
+            print(f"[{idx + 1}/{total}] {ref.phenotype}", flush=True)
 
             try:
-                json_path = _resolve_cohort_json(reference=ref, phenotype_dir=phenotype_dir)
+                json_path = _resolve_cohort_json(
+                    reference=ref, phenotype_dir=phenotype_dir
+                )
                 record["json_path"] = str(json_path)
 
                 cfg = base_cfg.model_copy(
@@ -205,8 +223,8 @@ def main(argv: list[str] | None = None) -> int:
                     }
                 )
 
-                _sql, python_count, metrics, _stages, _ctx, _diff_table, _diff_db = run_python_pipeline(
-                    con, cfg, keep_context_open=False, diff=False
+                _sql, python_count, metrics, _stages, _ctx, _diff_table, _diff_db = (
+                    run_python_pipeline(con, cfg, keep_context_open=False, diff=False)
                 )
                 record["python_rows"] = int(python_count)
                 record["python_total_ms"] = metrics.get("total_ms")
@@ -238,7 +256,9 @@ def main(argv: list[str] | None = None) -> int:
 
             results.append(record)
 
-        Path(args.output).write_text(json.dumps(results, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        Path(args.output).write_text(
+            json.dumps(results, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         print(
             f"\nCompleted {total} cohorts. Mismatches: {mismatches}, Failures: {failures}, No reference: {no_reference}. "
             f"Report written to {args.output}",

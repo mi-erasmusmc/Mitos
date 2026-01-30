@@ -7,7 +7,11 @@ from mitos.testing.circe_unknown_fields import iter_unknown_circe_fields
 
 def test_unknown_fields_detected_against_inventory():
     inventory = json.loads(
-        open("tests/scenarios/fieldcases/circe_field_inventory.json", "r", encoding="utf-8").read()
+        open(
+            "tests/scenarios/fieldcases/circe_field_inventory.json",
+            "r",
+            encoding="utf-8",
+        ).read()
     )
 
     cohort_json = {
@@ -39,7 +43,11 @@ def test_unknown_fields_detected_against_inventory():
 
 def test_cdm_version_range_is_unknown_in_circe_inventory():
     inventory = json.loads(
-        open("tests/scenarios/fieldcases/circe_field_inventory.json", "r", encoding="utf-8").read()
+        open(
+            "tests/scenarios/fieldcases/circe_field_inventory.json",
+            "r",
+            encoding="utf-8",
+        ).read()
     )
     cohort_json = {"Title": "t", "cdmVersionRange": "5.3"}
     unknown = list(

@@ -42,4 +42,6 @@ def test_drug_first_requires_initial_event_to_satisfy_date_filter():
     )
 
     events = build_events(criteria, ctx)
-    assert events.count().execute() == 0, "First exposure occurs before allowed window, so later exposures should be excluded"
+    assert events.count().execute() == 0, (
+        "First exposure occurs before allowed window, so later exposures should be excluded"
+    )

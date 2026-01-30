@@ -31,10 +31,14 @@ def build_dose_era(criteria: DoseEra, ctx: BuildContext):
     table = apply_concept_set_selection(table, "unit_concept_id", criteria.unit_cs, ctx)
 
     table = apply_numeric_range(table, "dose_value", criteria.dose_value)
-    table = apply_interval_range(table, "dose_era_start_date", "dose_era_end_date", criteria.era_length)
+    table = apply_interval_range(
+        table, "dose_era_start_date", "dose_era_end_date", criteria.era_length
+    )
 
     if criteria.age_at_start:
-        table = apply_age_filter(table, criteria.age_at_start, ctx, "dose_era_start_date")
+        table = apply_age_filter(
+            table, criteria.age_at_start, ctx, "dose_era_start_date"
+        )
     if criteria.age_at_end:
         table = apply_age_filter(table, criteria.age_at_end, ctx, "dose_era_end_date")
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)

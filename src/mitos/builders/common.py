@@ -50,7 +50,9 @@ def standardize_output(
         end_expr = start_expr
         needs_offset = ibis.literal(True)
     one_day = ibis.interval(days=1)
-    end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr).cast("timestamp")
+    end_expr = ibis.ifelse(needs_offset, cast(Any, end_expr) + one_day, end_expr).cast(
+        "timestamp"
+    )
     visit_expr = (
         table.visit_occurrence_id.cast("int64")
         if "visit_occurrence_id" in table.columns
@@ -98,7 +100,9 @@ def apply_codeset_filter(
         return table
     base_columns = table.columns
     left = table.view()
-    concepts = ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(codeset_id)).view()
+    concepts = ctx.codesets.filter(
+        ctx.codesets["codeset_id"] == ibis.literal(codeset_id)
+    ).view()
     joined = left.join(concepts, [left[concept_column] == concepts["concept_id"]])
     return _project_columns(joined, base_columns)
 
@@ -112,13 +116,12 @@ def apply_concept_set_selection(
     if selection is None or selection.codeset_id is None:
         return table
     left = table.view()
-    codeset_table = (
-        ctx.codesets.filter(ctx.codesets["codeset_id"] == ibis.literal(selection.codeset_id)).view()
-    )
+    codeset_table = ctx.codesets.filter(
+        ctx.codesets["codeset_id"] == ibis.literal(selection.codeset_id)
+    ).view()
     if selection.is_exclusion:
         return left.anti_join(codeset_table, [left[column] == codeset_table.concept_id])
     return left.join(codeset_table, [left[column] == codeset_table.concept_id])
-
 
 
 def apply_date_range(
@@ -370,7 +373,7 @@ def apply_first_event(table: ir.Table, start_column: str, primary_key: str) -> i
         group_by=table.person_id,
         order_by=[table[start_column], table[primary_key]],
     )
-    
+
     ranked = table.mutate(_row_num=row_number().over(window))
     filtered = ranked.filter(ranked["_row_num"] == ibis.literal(0))
     keep_columns = [col for col in table.columns if col != "_row_num"]
@@ -407,7 +410,9 @@ def apply_provider_specialty_filter(
         return table
     provider = ctx.table("provider")
     if provider_specialties:
-        provider = apply_concept_filters(provider, "specialty_concept_id", provider_specialties)
+        provider = apply_concept_filters(
+            provider, "specialty_concept_id", provider_specialties
+        )
     if provider_specialty_selection:
         provider = apply_concept_set_selection(
             provider, "specialty_concept_id", provider_specialty_selection, ctx
@@ -462,7 +467,9 @@ def apply_location_region_filter(
     )
     joined = joined.join(lh, [lh_condition])
     joined = joined.join(location, [joined.location_id == location.location_id])
-    codeset = ctx.codesets.filter(ctx.codesets.codeset_id == ir.literal(location_codeset_id))
+    codeset = ctx.codesets.filter(
+        ctx.codesets.codeset_id == ir.literal(location_codeset_id)
+    )
     filtered = joined.join(codeset, [location.region_concept_id == codeset.concept_id])
     return _project_columns(filtered, base_columns)
 

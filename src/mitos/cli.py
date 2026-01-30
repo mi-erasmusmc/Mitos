@@ -9,7 +9,9 @@ from .builders.pipeline import build_primary_events, build_primary_events_polars
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Compile primary criteria query for a cohort JSON.")
+    parser = argparse.ArgumentParser(
+        description="Compile primary criteria query for a cohort JSON."
+    )
     parser.add_argument(
         "--json",
         default="cohorts/6243-dementia-outcome-v1.json",

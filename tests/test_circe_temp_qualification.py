@@ -18,4 +18,3 @@ def test_rewrite_circe_temp_tables_qualified_in_temp_schema():
     assert "`scratch`.`scratch_efridgei`.`abcdef12Codesets`" in out
     assert "FROM `scratch`.`scratch_efridgei`.`abcdef12Codesets`" in out
     assert "`scratch`.`scratch_efridgei`.`abcdef12qualified_events`" in out
-

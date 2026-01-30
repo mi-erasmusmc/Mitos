@@ -51,7 +51,9 @@ def test_apply_codeset_filter_can_be_applied_twice_without_ambiguous_field_error
         overwrite=True,
     )
 
-    options = CohortBuildOptions(cdm_schema="main", vocabulary_schema="main", backend="duckdb")
+    options = CohortBuildOptions(
+        cdm_schema="main", vocabulary_schema="main", backend="duckdb"
+    )
     ctx = BuildContext(con, options, CodesetResource(table=con.table("_codesets")))
     try:
         t = ctx.table("observation")
@@ -74,10 +76,18 @@ def test_inclusion_rule_mask_uses_integer_bitops_in_postgres_sql():
         ),
         overwrite=True,
     )
-    options = CohortBuildOptions(cdm_schema="main", vocabulary_schema="main", backend="duckdb")
-    ctx = BuildContext(con, options, CodesetResource(table=table_from_literal_list([], column_name="concept_id").mutate(
-        codeset_id=ibis.null().cast("int64")
-    ).select("codeset_id", "concept_id")))
+    options = CohortBuildOptions(
+        cdm_schema="main", vocabulary_schema="main", backend="duckdb"
+    )
+    ctx = BuildContext(
+        con,
+        options,
+        CodesetResource(
+            table=table_from_literal_list([], column_name="concept_id")
+            .mutate(codeset_id=ibis.null().cast("int64"))
+            .select("codeset_id", "concept_id")
+        ),
+    )
     try:
         # Create two trivial inclusion rules whose masks are always true.
         rules = [

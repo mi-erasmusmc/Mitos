@@ -26,8 +26,12 @@ def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
     concept_column = criteria.get_concept_id_column()
     table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
 
-    table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
-    table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
+    table = apply_date_range(
+        table, criteria.get_start_date_column(), criteria.occurrence_start_date
+    )
+    table = apply_date_range(
+        table, criteria.get_end_date_column(), criteria.occurrence_end_date
+    )
 
     if criteria.visit_type:
         table = apply_concept_filters(
@@ -49,20 +53,30 @@ def build_visit_occurrence(criteria: VisitOccurrence, ctx: BuildContext):
         criteria.provider_specialty_cs,
         ctx,
     )
-    table = apply_concept_filters(table, "place_of_service_concept_id", criteria.place_of_service)
-    table = apply_concept_set_selection(table, "place_of_service_concept_id", criteria.place_of_service_cs, ctx)
+    table = apply_concept_filters(
+        table, "place_of_service_concept_id", criteria.place_of_service
+    )
+    table = apply_concept_set_selection(
+        table, "place_of_service_concept_id", criteria.place_of_service_cs, ctx
+    )
     if criteria.visit_length:
         table = apply_numeric_range(table, "visit_length", criteria.visit_length)
 
     if criteria.age:
-        table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
+        table = apply_age_filter(
+            table, criteria.age, ctx, criteria.get_start_date_column()
+        )
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
 
     if criteria.visit_source_concept is not None:
-        table = apply_codeset_filter(table, "visit_source_concept_id", criteria.visit_source_concept, ctx)
+        table = apply_codeset_filter(
+            table, "visit_source_concept_id", criteria.visit_source_concept, ctx
+        )
 
     if criteria.first:
-        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
+        table = apply_first_event(
+            table, criteria.get_start_date_column(), criteria.get_primary_key_column()
+        )
 
     table = project_event_columns(
         table,

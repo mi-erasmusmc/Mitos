@@ -26,10 +26,16 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
     concept_column = criteria.get_concept_id_column()
     table = apply_codeset_filter(table, concept_column, criteria.codeset_id, ctx)
     if criteria.first:
-        table = apply_first_event(table, criteria.get_start_date_column(), criteria.get_primary_key_column())
+        table = apply_first_event(
+            table, criteria.get_start_date_column(), criteria.get_primary_key_column()
+        )
 
-    table = apply_date_range(table, criteria.get_start_date_column(), criteria.occurrence_start_date)
-    table = apply_date_range(table, criteria.get_end_date_column(), criteria.occurrence_end_date)
+    table = apply_date_range(
+        table, criteria.get_start_date_column(), criteria.occurrence_start_date
+    )
+    table = apply_date_range(
+        table, criteria.get_end_date_column(), criteria.occurrence_end_date
+    )
 
     if criteria.measurement_type:
         table = apply_concept_filters(
@@ -38,21 +44,36 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
             criteria.measurement_type,
             exclude=bool(criteria.measurement_type_exclude),
         )
-    table = apply_concept_set_selection(table, "measurement_type_concept_id", criteria.measurement_type_cs, ctx)
+    table = apply_concept_set_selection(
+        table, "measurement_type_concept_id", criteria.measurement_type_cs, ctx
+    )
 
     if getattr(criteria, "operator_concept", None):
-        table = apply_concept_filters(table, "operator_concept_id", criteria.operator_concept)
-    table = apply_concept_set_selection(table, "operator_concept_id", getattr(criteria, "operator_concept_cs", None), ctx)
+        table = apply_concept_filters(
+            table, "operator_concept_id", criteria.operator_concept
+        )
+    table = apply_concept_set_selection(
+        table,
+        "operator_concept_id",
+        getattr(criteria, "operator_concept_cs", None),
+        ctx,
+    )
 
     value_column = "value_as_number"
     if criteria.unit:
         table = apply_concept_filters(table, "unit_concept_id", criteria.unit)
-        table, value_column = _maybe_normalize_units(table, criteria.unit, criteria.value_as_number)
+        table, value_column = _maybe_normalize_units(
+            table, criteria.unit, criteria.value_as_number
+        )
     table = apply_concept_set_selection(table, "unit_concept_id", criteria.unit_cs, ctx)
 
     if criteria.value_as_concept:
-        table = apply_concept_filters(table, "value_as_concept_id", criteria.value_as_concept)
-    table = apply_concept_set_selection(table, "value_as_concept_id", criteria.value_as_concept_cs, ctx)
+        table = apply_concept_filters(
+            table, "value_as_concept_id", criteria.value_as_concept
+        )
+    table = apply_concept_set_selection(
+        table, "value_as_concept_id", criteria.value_as_concept_cs, ctx
+    )
 
     table = apply_numeric_range(table, value_column, criteria.value_as_number)
     table = apply_numeric_range(table, "range_low", criteria.range_low)
@@ -66,7 +87,9 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
         denom = ibis.ifelse(table.range_high == 0, ibis.null(), table.range_high)
         ratio = (table.value_as_number / denom).name("_range_high_ratio")
         table = table.mutate(_range_high_ratio=ratio)
-        table = apply_numeric_range(table, "_range_high_ratio", criteria.range_high_ratio)
+        table = apply_numeric_range(
+            table, "_range_high_ratio", criteria.range_high_ratio
+        )
 
     if getattr(criteria, "abnormal", None):
         abnormal_predicate = (
@@ -77,7 +100,9 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
         table = table.filter(abnormal_predicate)
 
     if criteria.age:
-        table = apply_age_filter(table, criteria.age, ctx, criteria.get_start_date_column())
+        table = apply_age_filter(
+            table, criteria.age, ctx, criteria.get_start_date_column()
+        )
     table = apply_gender_filter(table, criteria.gender, criteria.gender_cs, ctx)
     table = apply_provider_specialty_filter(
         table,
@@ -86,7 +111,9 @@ def build_measurement(criteria: Measurement, ctx: BuildContext):
         ctx,
         provider_column="provider_id",
     )
-    table = apply_visit_concept_filters(table, criteria.visit_type, criteria.visit_type_cs, ctx)
+    table = apply_visit_concept_filters(
+        table, criteria.visit_type, criteria.visit_type_cs, ctx
+    )
     if criteria.measurement_source_concept is not None:
         table = apply_codeset_filter(
             table,
@@ -116,7 +143,9 @@ def _maybe_normalize_units(table, units, value_range):
       - For cell counts, only normalize when the numeric range appears to be in the canonical 10^9/L scale.
         Heuristic: upper bound <= 100.
     """
-    unit_ids = [concept.concept_id for concept in units if concept.concept_id is not None]
+    unit_ids = [
+        concept.concept_id for concept in units if concept.concept_id is not None
+    ]
     if not unit_ids:
         return table, "value_as_number"
     if not all(unit_id in _UNIT_NORMALIZATION for unit_id in unit_ids):

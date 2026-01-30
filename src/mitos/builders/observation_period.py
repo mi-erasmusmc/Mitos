@@ -20,19 +20,36 @@ from mitos.builders.registry import register
 def build_observation_period(criteria: ObservationPeriod, ctx: BuildContext):
     table = ctx.table("observation_period")
 
-    table = apply_date_range(table, "observation_period_start_date", criteria.period_start_date)
-    table = apply_date_range(table, "observation_period_end_date", criteria.period_end_date)
+    table = apply_date_range(
+        table, "observation_period_start_date", criteria.period_start_date
+    )
+    table = apply_date_range(
+        table, "observation_period_end_date", criteria.period_end_date
+    )
 
     if criteria.period_type:
-        table = apply_concept_filters(table, "period_type_concept_id", criteria.period_type)
-    table = apply_concept_set_selection(table, "period_type_concept_id", criteria.period_type_cs, ctx)
+        table = apply_concept_filters(
+            table, "period_type_concept_id", criteria.period_type
+        )
+    table = apply_concept_set_selection(
+        table, "period_type_concept_id", criteria.period_type_cs, ctx
+    )
 
-    table = apply_interval_range(table, "observation_period_start_date", "observation_period_end_date", criteria.period_length)
+    table = apply_interval_range(
+        table,
+        "observation_period_start_date",
+        "observation_period_end_date",
+        criteria.period_length,
+    )
 
     if criteria.age_at_start:
-        table = apply_age_filter(table, criteria.age_at_start, ctx, "observation_period_start_date")
+        table = apply_age_filter(
+            table, criteria.age_at_start, ctx, "observation_period_start_date"
+        )
     if criteria.age_at_end:
-        table = apply_age_filter(table, criteria.age_at_end, ctx, "observation_period_end_date")
+        table = apply_age_filter(
+            table, criteria.age_at_end, ctx, "observation_period_end_date"
+        )
 
     table, start_column, end_column = apply_user_defined_period(
         table,

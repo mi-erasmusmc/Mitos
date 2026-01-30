@@ -39,4 +39,8 @@ class ConceptSet(BaseModel):
         """Check for equality with another ConceptSet instance"""
         if not isinstance(other, ConceptSet):
             return False
-        return (self.id == other.id) and (self.name == other.name) and (self.expression == other.expression)
+        return (
+            (self.id == other.id)
+            and (self.name == other.name)
+            and (self.expression == other.expression)
+        )

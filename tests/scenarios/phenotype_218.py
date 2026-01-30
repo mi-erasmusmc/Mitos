@@ -9,10 +9,15 @@ import ibis
 from mitos.cohort_expression import CohortExpression
 from mitos.testing.omop.builder import OmopBuilder
 from mitos.testing.omop.vocab import build_minimal_vocab
-from mitos.testing.omop.phenotype import codeset_to_concept_id, generate_event_for_correlated_criteria
+from mitos.testing.omop.phenotype import (
+    codeset_to_concept_id,
+    generate_event_for_correlated_criteria,
+)
 
 
-PHENOTYPE_218_JSON = Path(__file__).resolve().parent / "phenotypes" / "phenotype-218.json"
+PHENOTYPE_218_JSON = (
+    Path(__file__).resolve().parent / "phenotypes" / "phenotype-218.json"
+)
 
 
 @dataclass(frozen=True)
@@ -41,7 +46,9 @@ def build_fake_omop_for_phenotype_218(
 
     vocab = build_minimal_vocab(expression.concept_sets or [])
     con.create_table("concept", obj=vocab.concept, database=schema, overwrite=True)
-    con.create_table("concept_ancestor", obj=vocab.concept_ancestor, database=schema, overwrite=True)
+    con.create_table(
+        "concept_ancestor", obj=vocab.concept_ancestor, database=schema, overwrite=True
+    )
     con.create_table(
         "concept_relationship",
         obj=vocab.concept_relationship,
@@ -65,7 +72,9 @@ def build_fake_omop_for_phenotype_218(
 
     passing_person = 1
     builder.add_person(person_id=passing_person)
-    builder.add_observation_period(person_id=passing_person, start_date=op_start, end_date=op_end)
+    builder.add_observation_period(
+        person_id=passing_person, start_date=op_start, end_date=op_end
+    )
     builder.add_condition_occurrence(
         person_id=passing_person,
         condition_concept_id=primary_concept,
@@ -82,7 +91,9 @@ def build_fake_omop_for_phenotype_218(
     # Washout rule (180 days): violate by adding a prior qualifying event in the lookback window.
     washout_fail_person = 2
     builder.add_person(person_id=washout_fail_person)
-    builder.add_observation_period(person_id=washout_fail_person, start_date=op_start, end_date=op_end)
+    builder.add_observation_period(
+        person_id=washout_fail_person, start_date=op_start, end_date=op_end
+    )
     builder.add_condition_occurrence(
         person_id=washout_fail_person,
         condition_concept_id=primary_concept,
@@ -105,7 +116,9 @@ def build_fake_omop_for_phenotype_218(
     # Hospitalization required: violate by omitting the inpatient visit.
     no_hosp_fail_person = 3
     builder.add_person(person_id=no_hosp_fail_person)
-    builder.add_observation_period(person_id=no_hosp_fail_person, start_date=op_start, end_date=op_end)
+    builder.add_observation_period(
+        person_id=no_hosp_fail_person, start_date=op_start, end_date=op_end
+    )
     builder.add_condition_occurrence(
         person_id=no_hosp_fail_person,
         condition_concept_id=primary_concept,
@@ -150,7 +163,9 @@ def build_fake_omop_for_phenotype_218(
                     codeset_map=codeset_map,
                 )
                 if ev is None:
-                    raise RuntimeError(f"Phenotype-218: failed to synthesize violating event for {rule.name!r}")
+                    raise RuntimeError(
+                        f"Phenotype-218: failed to synthesize violating event for {rule.name!r}"
+                    )
 
                 if ev.kind == "condition_occurrence":
                     builder.add_condition_occurrence(
@@ -188,18 +203,26 @@ def build_fake_omop_for_phenotype_218(
                         if nested.kind == "condition_occurrence":
                             builder.add_condition_occurrence(
                                 person_id=person_id,
-                                condition_concept_id=nested.payload["condition_concept_id"],
-                                condition_start_date=nested.payload["condition_start_date"],
+                                condition_concept_id=nested.payload[
+                                    "condition_concept_id"
+                                ],
+                                condition_start_date=nested.payload[
+                                    "condition_start_date"
+                                ],
                                 condition_end_date=nested.payload["condition_end_date"],
                                 visit_occurrence_id=visit_occurrence_id,
                             )
                         elif nested.kind == "measurement":
                             builder.add_measurement(
                                 person_id=person_id,
-                                measurement_concept_id=nested.payload["measurement_concept_id"],
+                                measurement_concept_id=nested.payload[
+                                    "measurement_concept_id"
+                                ],
                                 measurement_date=nested.payload["measurement_date"],
                                 value_as_number=nested.payload.get("value_as_number"),
-                                unit_concept_id=nested.payload.get("unit_concept_id", 0),
+                                unit_concept_id=nested.payload.get(
+                                    "unit_concept_id", 0
+                                ),
                                 range_low=nested.payload.get("range_low"),
                                 range_high=nested.payload.get("range_high"),
                                 visit_occurrence_id=visit_occurrence_id,
@@ -207,10 +230,14 @@ def build_fake_omop_for_phenotype_218(
                         elif nested.kind == "observation":
                             builder.add_observation(
                                 person_id=person_id,
-                                observation_concept_id=nested.payload["observation_concept_id"],
+                                observation_concept_id=nested.payload[
+                                    "observation_concept_id"
+                                ],
                                 observation_date=nested.payload["observation_date"],
                                 value_as_number=nested.payload.get("value_as_number"),
-                                unit_concept_id=nested.payload.get("unit_concept_id", 0),
+                                unit_concept_id=nested.payload.get(
+                                    "unit_concept_id", 0
+                                ),
                                 visit_occurrence_id=visit_occurrence_id,
                             )
                         else:
@@ -218,7 +245,9 @@ def build_fake_omop_for_phenotype_218(
                                 f"Phenotype-218: unsupported nested event kind {nested.kind!r}"
                             )
                 else:
-                    raise RuntimeError(f"Phenotype-218: unsupported event kind {ev.kind!r}")
+                    raise RuntimeError(
+                        f"Phenotype-218: unsupported event kind {ev.kind!r}"
+                    )
 
     builder.materialize(con)
 

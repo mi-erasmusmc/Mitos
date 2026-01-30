@@ -63,7 +63,9 @@ def test_measurement_range_high_ratio_is_applied():
         overwrite=True,
         obj=ibis.memtable([{"codeset_id": 1, "concept_id": 123}]),
     )
-    options = CohortBuildOptions(cdm_schema=schema, vocabulary_schema=schema, backend="duckdb")
+    options = CohortBuildOptions(
+        cdm_schema=schema, vocabulary_schema=schema, backend="duckdb"
+    )
     ctx = BuildContext(con, options, con.table("codesets", database=schema))
     try:
         criteria = Measurement.model_validate(

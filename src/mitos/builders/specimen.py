@@ -32,7 +32,9 @@ def build_specimen(criteria: Specimen, ctx: BuildContext):
             criteria.specimen_type,
             exclude=bool(criteria.specimen_type_exclude),
         )
-    table = apply_concept_set_selection(table, "specimen_type_concept_id", criteria.specimen_type_cs, ctx)
+    table = apply_concept_set_selection(
+        table, "specimen_type_concept_id", criteria.specimen_type_cs, ctx
+    )
 
     table = apply_numeric_range(table, "quantity", criteria.quantity)
 
@@ -41,12 +43,20 @@ def build_specimen(criteria: Specimen, ctx: BuildContext):
     table = apply_concept_set_selection(table, "unit_concept_id", criteria.unit_cs, ctx)
 
     if criteria.anatomic_site:
-        table = apply_concept_filters(table, "anatomic_site_concept_id", criteria.anatomic_site)
-    table = apply_concept_set_selection(table, "anatomic_site_concept_id", criteria.anatomic_site_cs, ctx)
+        table = apply_concept_filters(
+            table, "anatomic_site_concept_id", criteria.anatomic_site
+        )
+    table = apply_concept_set_selection(
+        table, "anatomic_site_concept_id", criteria.anatomic_site_cs, ctx
+    )
 
     if criteria.disease_status:
-        table = apply_concept_filters(table, "disease_status_concept_id", criteria.disease_status)
-    table = apply_concept_set_selection(table, "disease_status_concept_id", criteria.disease_status_cs, ctx)
+        table = apply_concept_filters(
+            table, "disease_status_concept_id", criteria.disease_status
+        )
+    table = apply_concept_set_selection(
+        table, "disease_status_concept_id", criteria.disease_status_cs, ctx
+    )
 
     table = apply_text_filter(table, "specimen_source_id", criteria.source_id)
     if criteria.specimen_source_concept is not None:

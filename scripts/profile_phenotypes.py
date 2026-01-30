@@ -13,7 +13,9 @@ import ibis
 
 try:
     import duckdb
-except ModuleNotFoundError:  # pragma: no cover - optional dependency checked at runtime.
+except (
+    ModuleNotFoundError
+):  # pragma: no cover - optional dependency checked at runtime.
     duckdb = None
 
 from mitos.cohort_expression import CohortExpression
@@ -78,13 +80,13 @@ def profile_circe_sql(
         raise RuntimeError(
             "duckdb Python package is required for Circe profiling. Install it via `pip install duckdb`."
         )
-    
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     statements = _split_sql_statements(sql_script)
-    
+
     conn = duckdb.connect(database=db_path, read_only=False)
     qualified_table = qualify_identifier(target_table, result_schema)
-    
+
     # Setup schemas/tables
     if result_schema:
         conn.execute(f"CREATE SCHEMA IF NOT EXISTS {quote_ident(result_schema)};")
@@ -102,7 +104,7 @@ def profile_circe_sql(
     )
 
     aggregated_plans = []
-    
+
     # Use a temporary directory to store individual step profiles
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
@@ -111,14 +113,14 @@ def profile_circe_sql(
             for i, stmt in enumerate(statements):
                 if not stmt.strip():
                     continue
-                
+
                 step_profile = tmp_path / f"step_{i:03d}.json"
                 escaped = _quote_path(step_profile)
-                
+
                 # Enable profiling for this specific statement
                 conn.execute("PRAGMA enable_profiling='json'")
                 conn.execute(f"PRAGMA profiling_output='{escaped}'")
-                
+
                 try:
                     conn.execute(stmt)
                 except Exception as e:
@@ -126,7 +128,7 @@ def profile_circe_sql(
                     raise
                 finally:
                     conn.execute("PRAGMA disable_profiling")
-                
+
                 # Read the generated profile and add to list
                 if step_profile.exists():
                     try:
@@ -172,7 +174,7 @@ def profile_expression(
         sql_chars = len(sql)
         if profile_path is not None:
             profile_ibis_sql(conn, sql, profile_path)
-        
+
         plan_rows = conn.raw_sql(f"EXPLAIN {sql}").fetchall()
         plan_text = "\n".join(
             str(row[1]) if isinstance(row, tuple) and len(row) > 1 else str(row[0])
@@ -198,7 +200,9 @@ def profile_expression(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Profile phenotype SQL size and plan complexity.")
+    parser = argparse.ArgumentParser(
+        description="Profile phenotype SQL size and plan complexity."
+    )
     parser.add_argument(
         "--db",
         default="duckyS_local.duckdb",
@@ -241,7 +245,13 @@ def main():
     parser.add_argument(
         "--phenotypes",
         nargs="*",
-        default=["phenotype-2.json", "phenotype-30.json", "phenotype-78.json", "phenotype-344.json", "phenotype-500.json"],
+        default=[
+            "phenotype-2.json",
+            "phenotype-30.json",
+            "phenotype-78.json",
+            "phenotype-344.json",
+            "phenotype-500.json",
+        ],
         help="Phenotype JSON filenames relative to fixtures directory",
     )
     parser.add_argument("--output", help="Optional path to write JSON results")
@@ -269,7 +279,7 @@ def main():
     temp_schema = args.temp_schema or result_schema
     vocab_schema = args.vocab_schema or args.cdm_schema
     results = []
-    
+
     for name in args.phenotypes:
         path = fixtures_dir / name
         if not path.exists():
@@ -277,13 +287,13 @@ def main():
             continue
         expression = CohortExpression.model_validate_json(path.read_text())
         conn = ibis.duckdb.connect(database=args.db)
-        
+
         phenotype_dir = profile_dir / path.stem
         phenotype_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Output paths requested by user
         ibis_plan_path = phenotype_dir / "ibis_plan.json"
-        
+
         try:
             options = CohortBuildOptions(
                 cdm_schema=args.cdm_schema,
@@ -294,7 +304,9 @@ def main():
                 generate_stats=args.row_count,
                 temp_emulation_schema=temp_schema,
             )
-            metrics = profile_expression(conn, expression, options, profile_path=ibis_plan_path)
+            metrics = profile_expression(
+                conn, expression, options, profile_path=ibis_plan_path
+            )
         finally:
             if hasattr(conn, "close"):
                 conn.close()

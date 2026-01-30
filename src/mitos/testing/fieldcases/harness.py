@@ -13,7 +13,11 @@ import polars as pl
 from mitos.build_context import BuildContext, CohortBuildOptions, compile_codesets
 from mitos.builders.pipeline import build_primary_events
 from mitos.cohort_expression import CohortExpression
-from mitos.testing.circe_oracle import CirceSqlConfig, execute_circe_sql, generate_circe_sql_via_r
+from mitos.testing.circe_oracle import (
+    CirceSqlConfig,
+    execute_circe_sql,
+    generate_circe_sql_via_r,
+)
 from mitos.testing.omop.builder import OmopBuilder
 from mitos.testing.omop.vocab import build_minimal_vocab
 
@@ -26,7 +30,9 @@ class FieldCase:
     cohort_id: int = 1
 
 
-def _ensure_empty_cohort_table(con: ibis.BaseBackend, *, schema: str, name: str) -> None:
+def _ensure_empty_cohort_table(
+    con: ibis.BaseBackend, *, schema: str, name: str
+) -> None:
     con.raw_sql(
         f"""
 CREATE TABLE IF NOT EXISTS {schema}.{name} (
@@ -39,7 +45,9 @@ CREATE TABLE IF NOT EXISTS {schema}.{name} (
     )
 
 
-def _read_cohort_rows(con: ibis.BaseBackend, *, schema: str, name: str, cohort_id: int) -> pl.DataFrame:
+def _read_cohort_rows(
+    con: ibis.BaseBackend, *, schema: str, name: str, cohort_id: int
+) -> pl.DataFrame:
     # Avoid Ibis -> DuckDB relation conversion (to_pyarrow) which is relatively expensive;
     # use the native DuckDB connection to fetch Arrow/Polars directly.
     duck = con.con
@@ -56,6 +64,7 @@ WHERE cohort_definition_id = ?
         return df
     return df.unique().sort(["subject_id", "cohort_start_date", "cohort_end_date"])
 
+
 def _cohort_rows_from_events(
     con: ibis.BaseBackend, events: ibis.expr.types.Table, *, cohort_id: int | None
 ) -> pl.DataFrame:
@@ -64,24 +73,27 @@ def _cohort_rows_from_events(
         if cohort_id is not None
         else ibis.null().cast("int64")
     )
-    df = (
-        events.select(
-            cohort_id_expr.name("cohort_definition_id"),
-            events.person_id.cast("int64").name("subject_id"),
-            events.start_date.cast("date").name("cohort_start_date"),
-            events.end_date.cast("date").name("cohort_end_date"),
-        )
+    df = events.select(
+        cohort_id_expr.name("cohort_definition_id"),
+        events.person_id.cast("int64").name("subject_id"),
+        events.start_date.cast("date").name("cohort_start_date"),
+        events.end_date.cast("date").name("cohort_end_date"),
     )
     sql = con.compile(df)
     duck = con.con
     out = pl.from_arrow(duck.execute(sql).fetch_arrow_table())
     if out.is_empty():
         return out
-    return out.select(["subject_id", "cohort_start_date", "cohort_end_date"]).unique().sort(
-        ["subject_id", "cohort_start_date", "cohort_end_date"]
+    return (
+        out.select(["subject_id", "cohort_start_date", "cohort_end_date"])
+        .unique()
+        .sort(["subject_id", "cohort_start_date", "cohort_end_date"])
     )
 
-def run_fieldcase(case: FieldCase, *, circe_sql: str | None = None) -> tuple[pl.DataFrame, pl.DataFrame]:
+
+def run_fieldcase(
+    case: FieldCase, *, circe_sql: str | None = None
+) -> tuple[pl.DataFrame, pl.DataFrame]:
     """
     Execute one FieldCase against:
       - Circe SQL (via R/CirceR) as oracle
@@ -93,7 +105,9 @@ def run_fieldcase(case: FieldCase, *, circe_sql: str | None = None) -> tuple[pl.
     if circe_sql is None:
         tmp_dir = Path(tempfile.mkdtemp(prefix=f"mitos_fieldcase_{case.name}_"))
         json_path = tmp_dir / "cohort.json"
-        json_path.write_text(json.dumps(case.cohort_json, indent=2) + "\n", encoding="utf-8")
+        json_path.write_text(
+            json.dumps(case.cohort_json, indent=2) + "\n", encoding="utf-8"
+        )
 
     try:
         con = ibis.duckdb.connect(database=":memory:")
@@ -169,11 +183,15 @@ def run_fieldcase(case: FieldCase, *, circe_sql: str | None = None) -> tuple[pl.
                     }
                 )
             else:
-                python_rows = _cohort_rows_from_events(con, events, cohort_id=case.cohort_id)
+                python_rows = _cohort_rows_from_events(
+                    con, events, cohort_id=case.cohort_id
+                )
         finally:
             ctx.close()
 
-        circe_rows = _read_cohort_rows(con, schema=schema, name=circe_table, cohort_id=case.cohort_id)
+        circe_rows = _read_cohort_rows(
+            con, schema=schema, name=circe_table, cohort_id=case.cohort_id
+        )
         return circe_rows, python_rows
     finally:
         if tmp_dir is not None:
@@ -193,13 +211,17 @@ def assert_same_rows(circe_rows: pl.DataFrame, python_rows: pl.DataFrame) -> Non
     circe_set = set(
         map(
             tuple,
-            circe_rows.select(["subject_id", "cohort_start_date", "cohort_end_date"]).to_numpy(),
+            circe_rows.select(
+                ["subject_id", "cohort_start_date", "cohort_end_date"]
+            ).to_numpy(),
         )
     )
     py_set = set(
         map(
             tuple,
-            python_rows.select(["subject_id", "cohort_start_date", "cohort_end_date"]).to_numpy(),
+            python_rows.select(
+                ["subject_id", "cohort_start_date", "cohort_end_date"]
+            ).to_numpy(),
         )
     )
     if circe_set != py_set:

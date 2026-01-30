@@ -8,6 +8,7 @@ from mitos.build_context import BuildContext, CohortBuildOptions
 from mitos.builders.registry import build_events
 from mitos.tables import DeviceExposure
 
+
 def make_context(conn):
     codeset_expr = ibis.memtable({"codeset_id": [1, 2], "concept_id": [501, 10]})
     name = f"codesets_{uuid.uuid4().hex}"

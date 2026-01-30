@@ -70,4 +70,3 @@ def split_sql_statements(sql_script: str) -> list[str]:
     if s := "".join(current).strip():
         statements.append(s)
     return statements
-

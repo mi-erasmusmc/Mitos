@@ -119,17 +119,24 @@ def build_plp_binary_task_labels(
     )
 
     # Drop rows that don't land in an observation period.
-    grouped_op = grouped_op.filter(grouped_op.obs_end.notnull() & grouped_op.obs_start.notnull())
+    grouped_op = grouped_op.filter(
+        grouped_op.obs_end.notnull() & grouped_op.obs_start.notnull()
+    )
 
     # Apply washout: require index to be >= obs_start + washout.
     if settings.washout_period_days:
         grouped_op = grouped_op.filter(
             grouped_op.prediction_time
-            >= grouped_op.obs_start + ibis.interval(days=int(settings.washout_period_days))
+            >= grouped_op.obs_start
+            + ibis.interval(days=int(settings.washout_period_days))
         )
 
-    tar_start = grouped_op.prediction_time + ibis.interval(days=int(settings.risk_window_start_days))
-    tar_end_candidate = grouped_op.prediction_time + ibis.interval(days=int(settings.risk_window_end_days))
+    tar_start = grouped_op.prediction_time + ibis.interval(
+        days=int(settings.risk_window_start_days)
+    )
+    tar_end_candidate = grouped_op.prediction_time + ibis.interval(
+        days=int(settings.risk_window_end_days)
+    )
     tar_end = ibis.least(tar_end_candidate, grouped_op.obs_end)
 
     # firstExposureOnly: keep earliest prediction_time per subject_id (tie-broken by row_id).
@@ -159,7 +166,9 @@ def build_plp_binary_task_labels(
         )
         prior_bad = (
             prior_hits.filter(outcome_time.notnull())
-            .select(prior_hits.subject_id, prior_hits.prediction_time, prior_hits.row_id)
+            .select(
+                prior_hits.subject_id, prior_hits.prediction_time, prior_hits.row_id
+            )
             .distinct()
         )
         pop = pop.anti_join(prior_bad, ["subject_id", "prediction_time", "row_id"])
@@ -174,7 +183,9 @@ def build_plp_binary_task_labels(
         ],
         how="left",
     )
-    hit_any = hits.group_by(hits.subject_id, hits.prediction_time, hits.row_id).aggregate(
+    hit_any = hits.group_by(
+        hits.subject_id, hits.prediction_time, hits.row_id
+    ).aggregate(
         _has_outcome=outcome_time.count() > 0,
     )
     # Avoid join name collisions by duplicating join keys with distinct names on the RHS.
@@ -199,13 +210,17 @@ def build_plp_binary_task_labels(
     # Apply TAR sufficiency filter, optionally keeping positives even if censored.
     if settings.require_time_at_risk:
         min_tar = int(settings.effective_min_time_at_risk_days())
-        enough_tar = labeled._tar_end >= labeled._tar_start + ibis.interval(days=min_tar)
+        enough_tar = labeled._tar_end >= labeled._tar_start + ibis.interval(
+            days=min_tar
+        )
         if settings.include_all_outcomes:
             labeled = labeled.filter(labeled.boolean_value | enough_tar)
         else:
             labeled = labeled.filter(enough_tar)
 
-    return labeled.select(labeled.subject_id, labeled.prediction_time, labeled.boolean_value)
+    return labeled.select(
+        labeled.subject_id, labeled.prediction_time, labeled.boolean_value
+    )
 
 
 MEDS_BOOL_LABEL_SCHEMA = {
@@ -246,7 +261,9 @@ def export_meds_task_labels(
 
     labels_dir.mkdir(parents=True, exist_ok=True)
 
-    def _iter_frames(obj: pl.DataFrame | Iterable[pl.DataFrame]) -> Iterator[pl.DataFrame]:
+    def _iter_frames(
+        obj: pl.DataFrame | Iterable[pl.DataFrame],
+    ) -> Iterator[pl.DataFrame]:
         if isinstance(obj, pl.DataFrame):
             yield obj
         else:
@@ -281,7 +298,9 @@ def export_meds_task_labels(
     # Write task definition last (so partial writes are easier to detect/clean).
     if task_def is None:
         task_def = {}
-    (task_dir / "task_def.json").write_text(json.dumps(task_def, indent=2, sort_keys=True) + "\n")
+    (task_dir / "task_def.json").write_text(
+        json.dumps(task_def, indent=2, sort_keys=True) + "\n"
+    )
 
     return task_dir
 
@@ -305,6 +324,10 @@ def _coerce_meds_bool_labels(df: pl.DataFrame) -> pl.DataFrame:
     # Present columns must be non-null.
     nulls = df.select(pl.all().null_count()).row(0)
     if any(v != 0 for v in nulls):
-        raise ValueError(f"MEDS label columns must be non-null; null counts={dict(zip(df.columns, nulls))}")
+        raise ValueError(
+            f"MEDS label columns must be non-null; null counts={dict(zip(df.columns, nulls))}"
+        )
 
-    return df.select(pl.col("subject_id"), pl.col("prediction_time"), pl.col("boolean_value"))
+    return df.select(
+        pl.col("subject_id"), pl.col("prediction_time"), pl.col("boolean_value")
+    )

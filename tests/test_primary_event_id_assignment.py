@@ -26,4 +26,3 @@ def test_assign_primary_event_ids_avoids_global_row_number():
     assert "row_number() over (order by" not in sql.lower()
     # We expect a partitioned row_number by person_id.
     assert "partition by" in sql.lower()
-

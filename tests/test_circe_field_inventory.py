@@ -54,7 +54,13 @@ def _sample_value_for_java_type(java_type: str) -> Any:
     if java_type == "Occurrence":
         return {"Type": 0, "Count": 1}
     if java_type in {"CriteriaGroup", "DemographicCriteria"}:
-        return {"Type": "ALL", "Count": 1, "CriteriaList": [], "DemographicCriteriaList": [], "Groups": []}
+        return {
+            "Type": "ALL",
+            "Count": 1,
+            "CriteriaList": [],
+            "DemographicCriteriaList": [],
+            "Groups": [],
+        }
 
     if java_type.endswith("[]"):
         return []
@@ -114,7 +120,9 @@ def test_pydantic_models_accept_all_circe_criteria_properties(criteria_type: str
     accepted = _collect_validation_aliases(model_cls)
 
     missing = sorted(required - accepted)
-    assert not missing, f"{criteria_type} missing aliases for Circe properties: {missing}"
+    assert not missing, (
+        f"{criteria_type} missing aliases for Circe properties: {missing}"
+    )
 
 
 @pytest.mark.parametrize("criteria_type", sorted(CRITERIA_TYPE_MAP.keys()))

@@ -3,11 +3,17 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from mitos.testing.circe_inventory import extract_circe_field_inventory, find_circe_jar, write_circe_field_inventory
+from mitos.testing.circe_inventory import (
+    extract_circe_field_inventory,
+    find_circe_jar,
+    write_circe_field_inventory,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Extract Circe cohort-definition JSON property inventory.")
+    parser = argparse.ArgumentParser(
+        description="Extract Circe cohort-definition JSON property inventory."
+    )
     parser.add_argument(
         "--circe-src",
         type=Path,

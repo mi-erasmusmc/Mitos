@@ -28,7 +28,10 @@ def test_payer_plan_period_filters_concepts_and_user_period():
         {
             "payer_plan_period_id": [1, 2],
             "person_id": [1, 1],
-            "payer_plan_period_start_date": [datetime(2020, 1, 1), datetime(2020, 6, 1)],
+            "payer_plan_period_start_date": [
+                datetime(2020, 1, 1),
+                datetime(2020, 6, 1),
+            ],
             "payer_plan_period_end_date": [datetime(2020, 4, 1), datetime(2020, 7, 1)],
             "payer_concept_id": [901, 999],
             "plan_concept_id": [1001, 999],
@@ -42,7 +45,9 @@ def test_payer_plan_period_filters_concepts_and_user_period():
     )
     conn.create_table("payer_plan_period", payer_plan_df, overwrite=True)
 
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     conn.create_table("person", person_df, overwrite=True)
 
     ctx = make_context(conn)

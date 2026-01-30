@@ -32,7 +32,9 @@ def _normalize_sweep_json_path(raw: str) -> Path:
     raise FileNotFoundError(f"Cannot resolve sweep json_path: {raw}")
 
 
-def _collect_sweep_used_keys(*, inventory: dict[str, list[dict[str, str]]]) -> tuple[set[str], set[str]]:
+def _collect_sweep_used_keys(
+    *, inventory: dict[str, list[dict[str, str]]]
+) -> tuple[set[str], set[str]]:
     sweep = load_sweep_report(Path("report_sweep_new.json"))
     used: set[str] = set()
     used_by_field: dict[str, int] = {}
@@ -58,7 +60,11 @@ def _collect_sweep_used_keys(*, inventory: dict[str, list[dict[str, str]]]) -> t
             if both_nonzero:
                 nonzero_in_both_by_field[key] = nonzero_in_both_by_field.get(key, 0) + 1
 
-    never_validated = {key for key, count in used_by_field.items() if count and nonzero_in_both_by_field.get(key, 0) == 0}
+    never_validated = {
+        key
+        for key, count in used_by_field.items()
+        if count and nonzero_in_both_by_field.get(key, 0) == 0
+    }
     return used, never_validated
 
 
@@ -94,4 +100,6 @@ def test_fieldcases_cover_all_fields_used_by_fixtures():
     assert not missing, f"Missing FieldCases for: {missing}"
 
     missing_two_case = sorted(key for key in used if covered_counts.get(key, 0) < 2)
-    assert not missing_two_case, f"Need ≥2 FieldCases for sweep-used fields: {missing_two_case}"
+    assert not missing_two_case, (
+        f"Need ≥2 FieldCases for sweep-used fields: {missing_two_case}"
+    )

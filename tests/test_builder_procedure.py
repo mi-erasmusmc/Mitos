@@ -28,7 +28,9 @@ def test_procedure_occurrence_builder_filters_codeset():
             "visit_occurrence_id": [1, 1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     conn.create_table("procedure_occurrence", procedure_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)
 
@@ -54,13 +56,21 @@ def test_procedure_occurrence_filters_source_concept_codeset():
             "visit_occurrence_id": [1, 1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     conn.create_table("procedure_occurrence", procedure_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)
 
     codeset_df = pl.DataFrame({"codeset_id": [1, 2], "concept_id": [601, 701]})
-    ctx = BuildContext(conn, CohortBuildOptions(), conn.create_table("codesets_source_test", codeset_df, overwrite=True))
-    criteria = ProcedureOccurrence.model_validate({"CodesetId": 1, "ProcedureSourceConcept": 2})
+    ctx = BuildContext(
+        conn,
+        CohortBuildOptions(),
+        conn.create_table("codesets_source_test", codeset_df, overwrite=True),
+    )
+    criteria = ProcedureOccurrence.model_validate(
+        {"CodesetId": 1, "ProcedureSourceConcept": 2}
+    )
 
     events = build_events(criteria, ctx)
     result = events.to_polars()

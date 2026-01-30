@@ -242,7 +242,9 @@ def generate_circe_sql_batch_via_r(
             out_path = tmp_dir / f"{name}.sql"
             sql_text = out_path.read_text(encoding="utf-8", errors="replace").strip()
             if not sql_text:
-                raise RuntimeError(f"Circe batch SQL generation produced empty SQL for: {name}")
+                raise RuntimeError(
+                    f"Circe batch SQL generation produced empty SQL for: {name}"
+                )
             sql_by_name[name] = sql_text
         return sql_by_name, elapsed
     finally:

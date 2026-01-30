@@ -25,7 +25,9 @@ from scripts.compare_cohort_counts import (  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sweep phenotypes and compare row counts (python vs circe).")
+    parser = argparse.ArgumentParser(
+        description="Sweep phenotypes and compare row counts (python vs circe)."
+    )
     parser.add_argument("--config", default="profiles.yaml")
     parser.add_argument("--profile", required=True)
 
@@ -87,7 +89,11 @@ def parse_args() -> argparse.Namespace:
     )
 
     # Defaults requested: no python staging, inline codesets
-    parser.add_argument("--python-stages", action="store_true", help="Enable python stage materialization.")
+    parser.add_argument(
+        "--python-stages",
+        action="store_true",
+        help="Enable python stage materialization.",
+    )
     parser.add_argument(
         "--inline-python-codesets",
         action="store_true",
@@ -100,11 +106,15 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--circe-debug", action="store_true")
     parser.add_argument("--no-cleanup-circe", action="store_true")
-    parser.add_argument("--explain-dir", help="Write EXPLAIN FORMATTED outputs per phenotype.")
+    parser.add_argument(
+        "--explain-dir", help="Write EXPLAIN FORMATTED outputs per phenotype."
+    )
     return parser.parse_args()
 
 
-def load_paths_from_report(report_path: Path, phenotype_dir: Path, *, status: str | None) -> list[Path]:
+def load_paths_from_report(
+    report_path: Path, phenotype_dir: Path, *, status: str | None
+) -> list[Path]:
     if not report_path.exists():
         raise FileNotFoundError(f"Report not found: {report_path}")
     with report_path.open() as f:
@@ -143,7 +153,9 @@ def main() -> int:
     print(f"Using profile: {args.profile}")
 
     if args.only_mismatches_from:
-        json_paths = load_paths_from_report(Path(args.only_mismatches_from), phenotype_dir, status="mismatch")
+        json_paths = load_paths_from_report(
+            Path(args.only_mismatches_from), phenotype_dir, status="mismatch"
+        )
     elif args.phenotypes:
         json_paths = [(phenotype_dir / name).resolve() for name in args.phenotypes]
     else:
@@ -151,18 +163,31 @@ def main() -> int:
 
     json_paths = [p for p in json_paths if p.exists()]
     if not json_paths:
-        print(f"No phenotype JSON files found under {phenotype_dir} (pattern={args.pattern})", file=sys.stderr)
+        print(
+            f"No phenotype JSON files found under {phenotype_dir} (pattern={args.pattern})",
+            file=sys.stderr,
+        )
         return 1
 
     if args.skip_existing_from:
-        existing_paths = set(load_paths_from_report(Path(args.skip_existing_from), phenotype_dir, status=None))
+        existing_paths = set(
+            load_paths_from_report(
+                Path(args.skip_existing_from), phenotype_dir, status=None
+            )
+        )
         before = len(json_paths)
         json_paths = [p for p in json_paths if p.resolve() not in existing_paths]
         skipped = before - len(json_paths)
         if skipped:
-            print(f"Skipping {skipped} phenotype(s) already present in {args.skip_existing_from}", flush=True)
+            print(
+                f"Skipping {skipped} phenotype(s) already present in {args.skip_existing_from}",
+                flush=True,
+            )
         if not json_paths:
-            print("All phenotypes were already present in the existing report; nothing to run.", flush=True)
+            print(
+                "All phenotypes were already present in the existing report; nothing to run.",
+                flush=True,
+            )
             return 0
 
     # Apply global overrides once; per-phenotype settings are applied via model_copy below.
@@ -207,7 +232,9 @@ def main() -> int:
             cohort_id = args.base_cohort_id + idx
             print(f"[{idx}/{total}] {label} (cohort_id={cohort_id}) ...", flush=True)
 
-            per = cfg.model_copy(update={"json_path": json_path, "cohort_id": cohort_id})
+            per = cfg.model_copy(
+                update={"json_path": json_path, "cohort_id": cohort_id}
+            )
             # Ensure Circe temp emulation defaults to result_schema if not set.
             if getattr(per, "temp_schema", None) is None:
                 per = per.model_copy(update={"temp_schema": per.result_schema})
@@ -223,7 +250,11 @@ def main() -> int:
 
             try:
                 py_cfg = per
-                if explain_dir is not None and per.python_materialize_stages and not per.capture_stages:
+                if (
+                    explain_dir is not None
+                    and per.python_materialize_stages
+                    and not per.capture_stages
+                ):
                     py_cfg = per.model_copy(update={"capture_stages": True})
 
                 (
@@ -234,7 +265,9 @@ def main() -> int:
                     py_ctx,
                     _py_diff_table,
                     _py_diff_db,
-                ) = run_python_pipeline(con, py_cfg, keep_context_open=bool(explain_dir), diff=False)
+                ) = run_python_pipeline(
+                    con, py_cfg, keep_context_open=bool(explain_dir), diff=False
+                )
                 record["python_rows"] = int(python_count)
                 record["python_total_ms"] = python_metrics.get("total_ms")
                 if explain_dir is not None:
@@ -264,14 +297,21 @@ def main() -> int:
                 record["circe_rows"] = int(circe_count)
                 record["circe_generate_ms"] = circe_generate_ms
                 record["circe_sql_exec_ms"] = circe_exec_metrics.get("sql_exec_ms")
-                record["circe_count_query_ms"] = circe_exec_metrics.get("count_query_ms")
-                record["circe_total_ms"] = circe_generate_ms + circe_exec_metrics.get("sql_exec_ms", 0.0)
+                record["circe_count_query_ms"] = circe_exec_metrics.get(
+                    "count_query_ms"
+                )
+                record["circe_total_ms"] = circe_generate_ms + circe_exec_metrics.get(
+                    "sql_exec_ms", 0.0
+                )
             except Exception as exc:
                 failures += 1
                 record["circe_error"] = str(exc)
                 print(f"  Circe pipeline failed: {exc}", flush=True)
 
-            if record.get("python_rows") is not None and record.get("circe_rows") is not None:
+            if (
+                record.get("python_rows") is not None
+                and record.get("circe_rows") is not None
+            ):
                 diff = int(record["python_rows"]) - int(record["circe_rows"])
                 record["row_diff"] = diff
                 record["status"] = "match" if diff == 0 else "mismatch"

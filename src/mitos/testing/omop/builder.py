@@ -31,6 +31,7 @@ def _polars_dtype(dtype: str):
         return pl.Utf8
     raise ValueError(f"Unsupported dtype in OMOP_SCHEMAS: {dtype!r}")
 
+
 def _duckdb_sql_type(dtype: str) -> str:
     dtype = dtype.lower()
     if dtype in {"int64", "int"}:
@@ -45,13 +46,18 @@ def _duckdb_sql_type(dtype: str) -> str:
         return "VARCHAR"
     raise ValueError(f"Unsupported dtype in OMOP_SCHEMAS: {dtype!r}")
 
+
 def _is_duckdb_backend(con: ibis.BaseBackend) -> bool:
     # `ibis.duckdb.connect` returns a backend with `.con` = duckdb.DuckDBPyConnection.
-    return hasattr(con, "con") and con.__class__.__module__.endswith("ibis.backends.duckdb.__init__")
+    return hasattr(con, "con") and con.__class__.__module__.endswith(
+        "ibis.backends.duckdb.__init__"
+    )
+
 
 def _quote_ident(ident: str) -> str:
     # Keep it simple: double-quote and escape embedded quotes.
     return '"' + ident.replace('"', '""') + '"'
+
 
 def _qualified(schema: str, name: str) -> str:
     return f"{_quote_ident(schema)}.{_quote_ident(name)}"
@@ -60,14 +66,18 @@ def _qualified(schema: str, name: str) -> str:
 @dataclass
 class OmopBuilder:
     schema: str = "main"
-    _rows: dict[str, list[dict[str, Any]]] = field(default_factory=lambda: defaultdict(list))
+    _rows: dict[str, list[dict[str, Any]]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
     _counters: dict[str, int] = field(default_factory=dict)
 
     def ensure_tables(self, con: ibis.BaseBackend, names: Iterable[str]) -> None:
         for name in names:
             self._ensure_table(con, name)
 
-    def _ensure_table(self, con: ibis.BaseBackend, name: str, *, assume_missing: bool = False) -> None:
+    def _ensure_table(
+        self, con: ibis.BaseBackend, name: str, *, assume_missing: bool = False
+    ) -> None:
         cols = OMOP_SCHEMAS.get(name)
         if cols is None:
             raise KeyError(f"Unknown OMOP table in test schema registry: {name}")
@@ -138,7 +148,9 @@ class OmopBuilder:
     ) -> None:
         self._rows["observation_period"].append(
             {
-                "observation_period_id": int(observation_period_id or self._next_id("observation_period_id")),
+                "observation_period_id": int(
+                    observation_period_id or self._next_id("observation_period_id")
+                ),
                 "person_id": int(person_id),
                 "observation_period_start_date": start_date,
                 "observation_period_end_date": end_date,
@@ -196,7 +208,8 @@ class OmopBuilder:
                 "person_id": int(person_id),
                 "visit_detail_concept_id": int(visit_detail_concept_id),
                 "visit_detail_start_date": visit_detail_start_date,
-                "visit_detail_end_date": visit_detail_end_date or visit_detail_start_date,
+                "visit_detail_end_date": visit_detail_end_date
+                or visit_detail_start_date,
                 "visit_detail_type_concept_id": int(visit_detail_type_concept_id),
                 "visit_detail_source_concept_id": int(visit_detail_source_concept_id),
                 "provider_id": int(provider_id),
@@ -219,7 +232,9 @@ class OmopBuilder:
         condition_source_concept_id: int = 0,
         visit_occurrence_id: int | None = None,
     ) -> int:
-        occ_id = int(condition_occurrence_id or self._next_id("condition_occurrence_id"))
+        occ_id = int(
+            condition_occurrence_id or self._next_id("condition_occurrence_id")
+        )
         self._rows["condition_occurrence"].append(
             {
                 "condition_occurrence_id": occ_id,
@@ -287,7 +302,9 @@ class OmopBuilder:
                 "measurement_datetime": measurement_datetime,
                 "measurement_type_concept_id": int(measurement_type_concept_id),
                 "operator_concept_id": int(operator_concept_id),
-                "value_as_number": float(value_as_number) if value_as_number is not None else None,
+                "value_as_number": float(value_as_number)
+                if value_as_number is not None
+                else None,
                 "value_as_concept_id": int(value_as_concept_id),
                 "unit_concept_id": int(unit_concept_id),
                 "range_low": float(range_low) if range_low is not None else None,
@@ -326,7 +343,8 @@ class OmopBuilder:
                 "person_id": int(person_id),
                 "drug_concept_id": int(drug_concept_id),
                 "drug_exposure_start_date": drug_exposure_start_date,
-                "drug_exposure_end_date": drug_exposure_end_date or drug_exposure_start_date,
+                "drug_exposure_end_date": drug_exposure_end_date
+                or drug_exposure_start_date,
                 "days_supply": int(days_supply),
                 "quantity": float(quantity) if quantity is not None else None,
                 "refills": int(refills),
@@ -414,7 +432,8 @@ class OmopBuilder:
                 "person_id": int(person_id),
                 "device_concept_id": int(device_concept_id),
                 "device_exposure_start_date": device_exposure_start_date,
-                "device_exposure_end_date": device_exposure_end_date or device_exposure_start_date,
+                "device_exposure_end_date": device_exposure_end_date
+                or device_exposure_start_date,
                 "device_type_concept_id": int(device_type_concept_id),
                 "quantity": float(quantity) if quantity is not None else None,
                 "unique_device_id": unique_device_id,
@@ -440,7 +459,9 @@ class OmopBuilder:
         procedure_source_concept_id: int = 0,
         visit_occurrence_id: int | None = None,
     ) -> int:
-        occ_id = int(procedure_occurrence_id or self._next_id("procedure_occurrence_id"))
+        occ_id = int(
+            procedure_occurrence_id or self._next_id("procedure_occurrence_id")
+        )
         self._rows["procedure_occurrence"].append(
             {
                 "procedure_occurrence_id": occ_id,
@@ -480,7 +501,9 @@ class OmopBuilder:
                 "person_id": int(person_id),
                 "observation_concept_id": int(observation_concept_id),
                 "observation_date": observation_date,
-                "value_as_number": float(value_as_number) if value_as_number is not None else None,
+                "value_as_number": float(value_as_number)
+                if value_as_number is not None
+                else None,
                 "value_as_string": value_as_string,
                 "value_as_concept_id": int(value_as_concept_id),
                 "unit_concept_id": int(unit_concept_id),
@@ -563,7 +586,10 @@ class OmopBuilder:
             # Ensure every column exists; default missing fields to None.
             normalized: list[dict[str, Any]] = []
             for row in rows:
-                out = {col: row.get(col, _default_for_type(dtype)) for col, dtype in cols.items()}
+                out = {
+                    col: row.get(col, _default_for_type(dtype))
+                    for col, dtype in cols.items()
+                }
                 normalized.append(out)
 
             if normalized:
@@ -577,7 +603,9 @@ class OmopBuilder:
                 overwrite=True,
             )
 
-    def _materialize_duckdb_fast(self, con: ibis.BaseBackend, *, ensure_all_tables: bool) -> None:
+    def _materialize_duckdb_fast(
+        self, con: ibis.BaseBackend, *, ensure_all_tables: bool
+    ) -> None:
         """
         Fast-path table creation/loading for DuckDB.
 
@@ -595,7 +623,10 @@ class OmopBuilder:
             cols = OMOP_SCHEMAS.get(name)
             if cols is None:
                 raise KeyError(f"Unknown OMOP table in test schema registry: {name}")
-            col_sql = ", ".join(f"{_quote_ident(col)} {_duckdb_sql_type(dtype)}" for col, dtype in cols.items())
+            col_sql = ", ".join(
+                f"{_quote_ident(col)} {_duckdb_sql_type(dtype)}"
+                for col, dtype in cols.items()
+            )
             con.raw_sql(f"DROP TABLE IF EXISTS {_qualified(self.schema, name)}")
             con.raw_sql(f"CREATE TABLE {_qualified(self.schema, name)} ({col_sql})")
 
@@ -604,7 +635,10 @@ class OmopBuilder:
             schema = {col: _polars_dtype(dtype) for col, dtype in cols.items()}
             normalized: list[dict[str, Any]] = []
             for row in rows:
-                out = {col: row.get(col, _default_for_type(dtype)) for col, dtype in cols.items()}
+                out = {
+                    col: row.get(col, _default_for_type(dtype))
+                    for col, dtype in cols.items()
+                }
                 normalized.append(out)
 
             if normalized:

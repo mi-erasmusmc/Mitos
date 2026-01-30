@@ -24,8 +24,12 @@ def load_sweep_report(path: Path) -> list[SweepRow]:
             SweepRow(
                 phenotype=str(entry.get("phenotype")),
                 json_path=Path(entry["json_path"]),
-                python_rows=int(entry["python_rows"]) if entry.get("python_rows") is not None else None,
-                circe_rows=int(entry["circe_rows"]) if entry.get("circe_rows") is not None else None,
+                python_rows=int(entry["python_rows"])
+                if entry.get("python_rows") is not None
+                else None,
+                circe_rows=int(entry["circe_rows"])
+                if entry.get("circe_rows") is not None
+                else None,
             )
         )
     return out

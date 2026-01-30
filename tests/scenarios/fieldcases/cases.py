@@ -7,7 +7,9 @@ from mitos.testing.fieldcases.templates import generated_cases
 from mitos.testing.omop.builder import OmopBuilder
 
 
-def _base_cohort_expression(criteria_type: str, criteria_payload: dict, *, codeset_id: int = 1) -> dict:
+def _base_cohort_expression(
+    criteria_type: str, criteria_payload: dict, *, codeset_id: int = 1
+) -> dict:
     return {
         "Title": f"FieldCase {criteria_type}",
         "PrimaryCriteria": {
@@ -51,7 +53,9 @@ def _base_cohort_expression(criteria_type: str, criteria_payload: dict, *, codes
 
 def _build_observation_value_as_string(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1)
-    builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+    )
     builder.add_observation(
         person_id=1,
         observation_concept_id=1001,
@@ -78,7 +82,9 @@ OBSERVATION_VALUE_AS_STRING_CONTAINS = FieldCase(
 
 def _build_measurement_operator(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1)
-    builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+    )
     builder.add_measurement(
         person_id=1,
         measurement_concept_id=1001,
@@ -111,7 +117,9 @@ MEASUREMENT_OPERATOR = FieldCase(
 
 def _build_measurement_provider_specialty(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1)
-    builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+    )
     builder.add_provider(provider_id=10, specialty_concept_id=777)
     builder.add_provider(provider_id=11, specialty_concept_id=778)
     builder.add_measurement(
@@ -146,7 +154,9 @@ MEASUREMENT_PROVIDER_SPECIALTY = FieldCase(
 
 def _build_drug_exposure_stop_reason(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1)
-    builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+    )
     builder.add_drug_exposure(
         person_id=1,
         drug_concept_id=1001,
@@ -173,7 +183,9 @@ DRUG_EXPOSURE_STOP_REASON = FieldCase(
 
 def _build_device_exposure_unique_device_id(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1)
-    builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+    )
     builder.add_device_exposure(
         person_id=1,
         device_concept_id=1001,
@@ -200,10 +212,14 @@ DEVICE_EXPOSURE_UNIQUE_DEVICE_ID = FieldCase(
 
 def _build_death_occurrence_start_date(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1, year_of_birth=1980)
-    builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2002, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(1999, 1, 1), end_date=date(2002, 1, 1)
+    )
     builder.add_death(person_id=1, death_date=date(1999, 6, 1), cause_concept_id=1001)
     builder.add_person(person_id=2, year_of_birth=1980)
-    builder.add_observation_period(person_id=2, start_date=date(1999, 1, 1), end_date=date(2002, 1, 1))
+    builder.add_observation_period(
+        person_id=2, start_date=date(1999, 1, 1), end_date=date(2002, 1, 1)
+    )
     builder.add_death(person_id=2, death_date=date(2000, 6, 1), cause_concept_id=1001)
 
 
@@ -219,7 +235,9 @@ DEATH_OCCURRENCE_START_DATE = FieldCase(
 
 def _build_procedure_provider_specialty(builder: OmopBuilder) -> None:
     builder.add_person(person_id=1)
-    builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+    builder.add_observation_period(
+        person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+    )
     builder.add_provider(provider_id=10, specialty_concept_id=777)
     builder.add_provider(provider_id=11, specialty_concept_id=778)
     builder.add_procedure_occurrence(

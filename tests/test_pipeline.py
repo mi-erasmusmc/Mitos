@@ -141,11 +141,19 @@ def test_primary_events_retains_duplicates_and_assigns_ordinals():
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1, 1],
-            "observation_period_start_date": [datetime(2019, 1, 1), datetime(2019, 6, 1)],
-            "observation_period_end_date": [datetime(2020, 12, 31), datetime(2020, 12, 31)],
+            "observation_period_start_date": [
+                datetime(2019, 1, 1),
+                datetime(2019, 6, 1),
+            ],
+            "observation_period_end_date": [
+                datetime(2020, 12, 31),
+                datetime(2020, 12, 31),
+            ],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_period_df, overwrite=True)
@@ -182,7 +190,9 @@ def test_primary_events_retains_duplicates_and_assigns_ordinals():
     events = build_primary_events(expression, ctx)
     result = events.to_polars().sort("event_id")
     assert len(result) == 2, "Both observation periods should yield events"
-    assert result["event_id"].to_list() == [1, 2], "Event ordinals must be assigned per person"
+    assert result["event_id"].to_list() == [1, 2], (
+        "Event ordinals must be assigned per person"
+    )
 
 
 def test_primary_events_preserves_source_ids_through_collapse():
@@ -190,8 +200,28 @@ def test_primary_events_preserves_source_ids_through_collapse():
 
     concept_df = pl.DataFrame({"concept_id": [1], "invalid_reason": [""]})
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}), overwrite=True)
-    conn.create_table("concept_relationship", pl.DataFrame({"concept_id_1": pl.Series([], dtype=pl.Int64), "concept_id_2": pl.Series([], dtype=pl.Int64), "relationship_id": pl.Series([], dtype=pl.String), "invalid_reason": pl.Series([], dtype=pl.String)}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
+        ),
+        overwrite=True,
+    )
+    conn.create_table(
+        "concept_relationship",
+        pl.DataFrame(
+            {
+                "concept_id_1": pl.Series([], dtype=pl.Int64),
+                "concept_id_2": pl.Series([], dtype=pl.Int64),
+                "relationship_id": pl.Series([], dtype=pl.String),
+                "invalid_reason": pl.Series([], dtype=pl.String),
+            }
+        ),
+        overwrite=True,
+    )
 
     condition_df = pl.DataFrame(
         {
@@ -210,27 +240,33 @@ def test_primary_events_preserves_source_ids_through_collapse():
             "observation_period_end_date": [datetime(2020, 12, 31)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_period_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)
 
     expression = CohortExpression.model_validate(
-            {
-                "ConceptSets": [
-                    {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                ],
-                "PrimaryCriteria": {
-                    "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
-                    "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
-                    "PrimaryCriteriaLimit": {"Type": "All"},
+        {
+            "ConceptSets": [
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
                 },
-                "EndStrategy": {"DateOffset": {"DateField": "EndDate", "Offset": 0}},
-                "ExpressionLimit": {"Type": "All"},
-                "CollapseSettings": {"CollapseType": "ERA", "EraPad": 10},
-            }
-        )
+            ],
+            "PrimaryCriteria": {
+                "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
+                "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
+                "PrimaryCriteriaLimit": {"Type": "All"},
+            },
+            "EndStrategy": {"DateOffset": {"DateField": "EndDate", "Offset": 0}},
+            "ExpressionLimit": {"Type": "All"},
+            "CollapseSettings": {"CollapseType": "ERA", "EraPad": 10},
+        }
+    )
 
     options = CohortBuildOptions()
     codeset_resource = compile_codesets(conn, expression.concept_sets, options)
@@ -241,7 +277,9 @@ def test_primary_events_preserves_source_ids_through_collapse():
     assert len(df) == 1
     assert df["start_date"][0] == datetime(2020, 1, 1)
     assert df["end_date"][0] == datetime(2020, 1, 7)
-    assert "_source_event_id" not in df.columns, "Internal source ids should be dropped after collapse"
+    assert "_source_event_id" not in df.columns, (
+        "Internal source ids should be dropped after collapse"
+    )
 
 
 def test_default_end_strategy_extends_to_observation_period():
@@ -251,7 +289,12 @@ def test_default_end_strategy_extends_to_observation_period():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}),
+        pl.DataFrame(
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -284,7 +327,9 @@ def test_default_end_strategy_extends_to_observation_period():
             "observation_period_end_date": [datetime(2020, 12, 31)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_period_df, overwrite=True)
@@ -293,7 +338,11 @@ def test_default_end_strategy_extends_to_observation_period():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -320,7 +369,12 @@ def test_qualified_limit_is_ignored_to_match_circe():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}),
+        pl.DataFrame(
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -352,7 +406,9 @@ def test_qualified_limit_is_ignored_to_match_circe():
             "observation_period_end_date": [datetime(2021, 1, 1)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_period_df, overwrite=True)
@@ -361,7 +417,11 @@ def test_qualified_limit_is_ignored_to_match_circe():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -381,4 +441,7 @@ def test_qualified_limit_is_ignored_to_match_circe():
     events = build_primary_events(expression, ctx)
     df = events.to_polars()
     assert len(df) == 2
-    assert set(df["start_date"].to_list()) == {datetime(2020, 1, 1), datetime(2020, 2, 1)}
+    assert set(df["start_date"].to_list()) == {
+        datetime(2020, 1, 1),
+        datetime(2020, 2, 1),
+    }

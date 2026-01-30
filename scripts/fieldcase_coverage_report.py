@@ -58,11 +58,14 @@ def main(argv: list[str] | None = None) -> int:
     circe_inventory = json.loads(args.inventory.read_text(encoding="utf-8"))
     all_cases = _load_fieldcases(args.fieldcases)
     fieldcases = [(case.name, case.cohort_json) for case in all_cases]
-    coverage = build_fieldcase_coverage(fieldcases=fieldcases, circe_inventory=circe_inventory)
+    coverage = build_fieldcase_coverage(
+        fieldcases=fieldcases, circe_inventory=circe_inventory
+    )
 
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
     args.out_json.write_text(
-        json.dumps(fieldcase_coverage_to_jsonable(coverage), indent=2, sort_keys=True) + "\n",
+        json.dumps(fieldcase_coverage_to_jsonable(coverage), indent=2, sort_keys=True)
+        + "\n",
         encoding="utf-8",
     )
     args.out_md.parent.mkdir(parents=True, exist_ok=True)

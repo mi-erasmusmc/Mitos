@@ -75,7 +75,10 @@ class Occurrence(BaseModel):
         if normalized.endswith("_id"):
             trimmed = normalized.removesuffix("_id")
             for column in CriteriaColumn:
-                if column.value.endswith("_id") and column.value.removesuffix("_id") == trimmed:
+                if (
+                    column.value.endswith("_id")
+                    and column.value.removesuffix("_id") == trimmed
+                ):
                     return column
         raise ValueError(f"Unsupported occurrence count column: {value}")
 
@@ -115,7 +118,9 @@ class WindowCriteria(BaseModel):
     start_window: Optional[Window] = Field(default=None, alias="StartWindow")
     end_window: Optional[Window] = Field(default=None, alias="EndWindow")
     restrict_visit: Optional[bool] = Field(default=None, alias="RestrictVisit")
-    ignore_observation_period: Optional[bool] = Field(default=None, alias="IgnoreObservationPeriod")
+    ignore_observation_period: Optional[bool] = Field(
+        default=None, alias="IgnoreObservationPeriod"
+    )
 
 
 class CorrelatedCriteria(WindowCriteria):
@@ -162,16 +167,22 @@ class Concept(BaseModel):
     concept_name: Optional[str] = Field(default=None, alias="CONCEPT_NAME")
     standard_concept: Optional[str] = Field(default=None, alias="STANDARD_CONCEPT")
     invalid_reason: Optional[str] = Field(default=None, alias="INVALID_REASON")
-    invalid_reason_caption: Optional[str] = Field(default=None, alias="INVALID_REASON_CAPTION")
+    invalid_reason_caption: Optional[str] = Field(
+        default=None, alias="INVALID_REASON_CAPTION"
+    )
     concept_code: Optional[str] = Field(default=None, alias="CONCEPT_CODE")
     domain_id: Optional[str] = Field(default=None, alias="DOMAIN_ID")
     vocabulary_id: Optional[str] = Field(default=None, alias="VOCABULARY_ID")
     concept_class_id: Optional[str] = Field(default=None, alias="CONCEPT_CLASS_ID")
-    standard_concept_caption: Optional[str] = Field(default=None, alias="STANDARD_CONCEPT_CAPTION")
+    standard_concept_caption: Optional[str] = Field(
+        default=None, alias="STANDARD_CONCEPT_CAPTION"
+    )
 
     def model_dump(self, *args, **kwargs):
         by_alias = kwargs.get("by_alias", False)
-        data = super().model_dump(*args, by_alias=by_alias, exclude_none=False, exclude_unset=False)
+        data = super().model_dump(
+            *args, by_alias=by_alias, exclude_none=False, exclude_unset=False
+        )
         included_keys = set()
         for name in getattr(self, "model_fields_set", set()):
             field = self.model_fields.get(name)
@@ -182,6 +193,7 @@ class Concept(BaseModel):
                 included_keys.add(key if by_alias else name)
         return {k: v for k, v in data.items() if v is not None or k in included_keys}
 
+
 class DemoGraphicCriteria(BaseModel):
     model_config = ConfigDict(populate_by_name=False)
 
@@ -191,9 +203,15 @@ class DemoGraphicCriteria(BaseModel):
     race: list[Concept] = Field(default_factory=list, alias="Race")
     race_cs: Optional[ConceptSetSelection] = Field(default=None, alias="RaceCS")
     ethnicity: list[Concept] = Field(default_factory=list, alias="Ethnicity")
-    ethnicity_cs: Optional[ConceptSetSelection] = Field(default=None, alias="EthnicityCS")
-    occurrence_start_date: Optional[DateRange] = Field(default=None, alias="OccurrenceStartDate")
-    occurrence_end_date: Optional[DateRange] = Field(default=None, alias="OccurrenceEndDate")
+    ethnicity_cs: Optional[ConceptSetSelection] = Field(
+        default=None, alias="EthnicityCS"
+    )
+    occurrence_start_date: Optional[DateRange] = Field(
+        default=None, alias="OccurrenceStartDate"
+    )
+    occurrence_end_date: Optional[DateRange] = Field(
+        default=None, alias="OccurrenceEndDate"
+    )
 
     @field_serializer("gender", "race", "ethnicity", when_used="always")
     def _serialize_nonempty_lists(self, value):
@@ -205,12 +223,18 @@ class CriteriaGroup(BaseModel):
 
     type: str = Field(None, alias="Type")
     count: int = Field(None, alias="Count")
-    criteria_list: list[CorrelatedCriteria] = Field(default_factory=list, alias="CriteriaList")
-    demographic_criteria_list: list[DemoGraphicCriteria] = Field(default_factory=list, alias="DemographicCriteriaList")
+    criteria_list: list[CorrelatedCriteria] = Field(
+        default_factory=list, alias="CriteriaList"
+    )
+    demographic_criteria_list: list[DemoGraphicCriteria] = Field(
+        default_factory=list, alias="DemographicCriteriaList"
+    )
     groups: list[CriteriaGroup] = Field(default_factory=list, alias="Groups")
 
     def is_empty(self):
-        return not any([self.criteria_list, self.demographic_criteria_list, self.groups])
+        return not any(
+            [self.criteria_list, self.demographic_criteria_list, self.groups]
+        )
 
 
 def to_snake_case(name: str) -> str:

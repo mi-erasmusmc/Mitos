@@ -16,7 +16,10 @@ def test_pipeline_with_additional_inclusion_censoring_and_collapse():
     conn.create_table(
         "concept_ancestor",
         pl.DataFrame(
-            {"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
         ),
         overwrite=True,
     )
@@ -69,7 +72,9 @@ def test_pipeline_with_additional_inclusion_censoring_and_collapse():
             "visit_occurrence_id": [1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -87,8 +92,16 @@ def test_pipeline_with_additional_inclusion_censoring_and_collapse():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "measurement", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "measurement",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -102,7 +115,10 @@ def test_pipeline_with_additional_inclusion_censoring_and_collapse():
                         "Criteria": {
                             "Measurement": {
                                 "CodesetId": 2,
-                                "OccurrenceStartDate": {"Value": "2020-01-01", "Op": "gte"},
+                                "OccurrenceStartDate": {
+                                    "Value": "2020-01-01",
+                                    "Op": "gte",
+                                },
                             }
                         },
                         "StartWindow": {
@@ -155,12 +171,16 @@ def test_pipeline_with_additional_inclusion_censoring_and_collapse():
 def test_inclusion_rule_counts_distinct_domain_concepts():
     conn = ibis.duckdb.connect(database=":memory:")
 
-    concept_df = pl.DataFrame({"concept_id": [100, 200, 201, 202], "invalid_reason": ["", "", "", ""]})
+    concept_df = pl.DataFrame(
+        {"concept_id": [100, 200, 201, 202], "invalid_reason": ["", "", "", ""]}
+    )
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -209,11 +229,20 @@ def test_inclusion_rule_counts_distinct_domain_concepts():
             "gap_days": [0, 0, 0, 0, 0],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1, 2], "year_of_birth": [1980, 1985], "gender_concept_id": [8507, 8507]})
+    person_df = pl.DataFrame(
+        {
+            "person_id": [1, 2],
+            "year_of_birth": [1980, 1985],
+            "gender_concept_id": [8507, 8507],
+        }
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1, 2],
-            "observation_period_start_date": [datetime(2019, 1, 1), datetime(2019, 1, 1)],
+            "observation_period_start_date": [
+                datetime(2019, 1, 1),
+                datetime(2019, 1, 1),
+            ],
             "observation_period_end_date": [datetime(2021, 1, 1), datetime(2021, 1, 1)],
         }
     )
@@ -226,7 +255,11 @@ def test_inclusion_rule_counts_distinct_domain_concepts():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 100}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 100}}]},
+                },
                 {
                     "id": 2,
                     "name": "drug era",
@@ -289,7 +322,9 @@ def test_end_strategy_date_offset_capped_by_observation_period():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -315,7 +350,9 @@ def test_end_strategy_date_offset_capped_by_observation_period():
             "visit_occurrence_id": [1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -331,7 +368,11 @@ def test_end_strategy_date_offset_capped_by_observation_period():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -361,7 +402,9 @@ def test_collapse_uses_running_max_end_dates():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -395,7 +438,9 @@ def test_collapse_uses_running_max_end_dates():
             "visit_occurrence_id": [1, 1, 1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -409,19 +454,23 @@ def test_collapse_uses_running_max_end_dates():
     conn.create_table("observation_period", observation_period_df, overwrite=True)
 
     expression = CohortExpression.model_validate(
-            {
-                "ConceptSets": [
-                    {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                ],
-                "PrimaryCriteria": {
-                    "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
-                    "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
-                    "PrimaryCriteriaLimit": {"Type": "All"},
+        {
+            "ConceptSets": [
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
                 },
-                "EndStrategy": {"DateOffset": {"DateField": "EndDate", "Offset": 0}},
-                "CollapseSettings": {"CollapseType": "ERA", "EraPad": 0},
-            }
-        )
+            ],
+            "PrimaryCriteria": {
+                "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
+                "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
+                "PrimaryCriteriaLimit": {"Type": "All"},
+            },
+            "EndStrategy": {"DateOffset": {"DateField": "EndDate", "Offset": 0}},
+            "CollapseSettings": {"CollapseType": "ERA", "EraPad": 0},
+        }
+    )
 
     options = CohortBuildOptions()
     codeset_resource = compile_codesets(conn, expression.concept_sets, options)
@@ -444,7 +493,9 @@ def test_additional_criteria_window_anchor_uses_index_start():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -479,7 +530,9 @@ def test_additional_criteria_window_anchor_uses_index_start():
             "visit_end_date": [datetime(2020, 1, 5)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -496,8 +549,16 @@ def test_additional_criteria_window_anchor_uses_index_start():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "visit", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "visit",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -550,7 +611,9 @@ def test_correlated_criteria_enforce_observation_period_end():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -585,7 +648,9 @@ def test_correlated_criteria_enforce_observation_period_end():
             "visit_end_date": [datetime(2020, 3, 1)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -602,8 +667,16 @@ def test_correlated_criteria_enforce_observation_period_end():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "visit", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "visit",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -650,7 +723,9 @@ def test_visit_occurrence_provider_specialty_filters_correlated_events():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -695,7 +770,9 @@ def test_visit_occurrence_provider_specialty_filters_correlated_events():
             "gender_concept_id": pl.Series([None, None], dtype=pl.Int32),
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1970], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1970], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -713,7 +790,11 @@ def test_visit_occurrence_provider_specialty_filters_correlated_events():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [
@@ -777,7 +858,9 @@ def test_correlated_criteria_detect_events_extending_past_observation_period_end
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -799,11 +882,15 @@ def test_correlated_criteria_detect_events_extending_past_observation_period_end
             "person_id": [1, 1],
             "condition_concept_id": [1, 2],
             "condition_start_date": [datetime(2024, 9, 12), datetime(2024, 12, 31)],
-            "condition_end_date": pl.Series([datetime(2024, 9, 13), None], dtype=pl.Datetime),
+            "condition_end_date": pl.Series(
+                [datetime(2024, 9, 13), None], dtype=pl.Datetime
+            ),
             "visit_occurrence_id": pl.Series([None, None], dtype=pl.Int64),
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -819,8 +906,16 @@ def test_correlated_criteria_detect_events_extending_past_observation_period_end
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "primary", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "correlated", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "primary",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "correlated",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -863,7 +958,9 @@ def test_primary_correlated_criteria_respect_observation_period_bounds():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -889,7 +986,9 @@ def test_primary_correlated_criteria_respect_observation_period_bounds():
             "visit_occurrence_id": pl.Series([None, None], dtype=pl.Int64),
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -905,8 +1004,16 @@ def test_primary_correlated_criteria_respect_observation_period_bounds():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "primary", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "correlated", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "primary",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "correlated",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [
@@ -917,7 +1024,9 @@ def test_primary_correlated_criteria_respect_observation_period_bounds():
                                 "Type": "ALL",
                                 "CriteriaList": [
                                     {
-                                        "Criteria": {"ConditionOccurrence": {"CodesetId": 2}},
+                                        "Criteria": {
+                                            "ConditionOccurrence": {"CodesetId": 2}
+                                        },
                                         "StartWindow": {
                                             "Start": {"Coeff": -1},
                                             "End": {"Days": 30, "Coeff": -1},
@@ -960,7 +1069,13 @@ def test_correlated_visit_end_window_defaults_to_index_start():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -993,7 +1108,9 @@ def test_correlated_visit_end_window_defaults_to_index_start():
             "visit_end_date": [datetime(2020, 1, 10)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -1010,8 +1127,16 @@ def test_correlated_visit_end_window_defaults_to_index_start():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "visit", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "visit",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1057,7 +1182,13 @@ def test_correlated_visit_end_window_allows_overflow_past_observation_end():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -1089,7 +1220,9 @@ def test_correlated_visit_end_window_allows_overflow_past_observation_end():
             "condition_end_date": [datetime(2020, 1, 20)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1970], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1970], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -1106,8 +1239,16 @@ def test_correlated_visit_end_window_allows_overflow_past_observation_end():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "visit", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "visit",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [
@@ -1118,7 +1259,9 @@ def test_correlated_visit_end_window_allows_overflow_past_observation_end():
                                 "Type": "ALL",
                                 "CriteriaList": [
                                     {
-                                        "Criteria": {"ConditionOccurrence": {"CodesetId": 2}},
+                                        "Criteria": {
+                                            "ConditionOccurrence": {"CodesetId": 2}
+                                        },
                                         "StartWindow": {
                                             "Start": {"Coeff": -1},
                                             "End": {"Coeff": 1},
@@ -1143,7 +1286,11 @@ def test_correlated_visit_end_window_allows_overflow_past_observation_end():
         }
     )
 
-    ctx = BuildContext(conn, CohortBuildOptions(), compile_codesets(conn, expression.concept_sets, CohortBuildOptions()))
+    ctx = BuildContext(
+        conn,
+        CohortBuildOptions(),
+        compile_codesets(conn, expression.concept_sets, CohortBuildOptions()),
+    )
     events = build_primary_events(expression, ctx)
     assert events is not None
     assert events.count().execute() == 1
@@ -1157,7 +1304,9 @@ def test_correlated_criteria_respect_ignore_observation_period_flag():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -1197,7 +1346,9 @@ def test_correlated_criteria_respect_ignore_observation_period_flag():
             "observation_period_end_date": [datetime(2020, 1, 31)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation", observation_df, overwrite=True)
@@ -1207,8 +1358,16 @@ def test_correlated_criteria_respect_ignore_observation_period_flag():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "observation", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "observation",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1250,7 +1409,9 @@ def test_inclusion_rule_condition_era_excludes_matching_events():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -1286,9 +1447,15 @@ def test_inclusion_rule_condition_era_excludes_matching_events():
             "condition_era_end_date": [datetime(2020, 1, 20)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
-        {"person_id": [1], "observation_period_start_date": [datetime(2019, 1, 1)], "observation_period_end_date": [datetime(2021, 1, 1)]}
+        {
+            "person_id": [1],
+            "observation_period_start_date": [datetime(2019, 1, 1)],
+            "observation_period_end_date": [datetime(2021, 1, 1)],
+        }
     )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
@@ -1299,8 +1466,16 @@ def test_inclusion_rule_condition_era_excludes_matching_events():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "index", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "pregnancy", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "index",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "pregnancy",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1320,8 +1495,16 @@ def test_inclusion_rule_condition_era_excludes_matching_events():
                                         "OccurrenceCount": {"Value": 0, "Op": "eq"},
                                     }
                                 },
-                                "StartWindow": {"Start": {"Coeff": -1}, "End": {"Days": 0, "Coeff": -1}, "UseIndexEnd": False},
-                                "EndWindow": {"Start": {"Days": 0, "Coeff": 1}, "End": {"Coeff": 1}, "UseEventEnd": True},
+                                "StartWindow": {
+                                    "Start": {"Coeff": -1},
+                                    "End": {"Days": 0, "Coeff": -1},
+                                    "UseIndexEnd": False,
+                                },
+                                "EndWindow": {
+                                    "Start": {"Days": 0, "Coeff": 1},
+                                    "End": {"Coeff": 1},
+                                    "UseEventEnd": True,
+                                },
                                 "IgnoreObservationPeriod": True,
                                 "Occurrence": {"Type": 0, "Count": 0},
                             }
@@ -1347,7 +1530,13 @@ def test_correlated_occurrence_distinct_start_dates():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -1366,8 +1555,16 @@ def test_correlated_occurrence_distinct_start_dates():
             "condition_occurrence_id": [1, 2, 3],
             "person_id": [1, 1, 1],
             "condition_concept_id": [1, 2, 2],
-            "condition_start_date": [datetime(2020, 1, 1), datetime(2020, 1, 1), datetime(2020, 1, 2)],
-            "condition_end_date": [datetime(2020, 1, 2), datetime(2020, 1, 1), datetime(2020, 1, 2)],
+            "condition_start_date": [
+                datetime(2020, 1, 1),
+                datetime(2020, 1, 1),
+                datetime(2020, 1, 2),
+            ],
+            "condition_end_date": [
+                datetime(2020, 1, 2),
+                datetime(2020, 1, 1),
+                datetime(2020, 1, 2),
+            ],
             "visit_occurrence_id": [1, 1, 1],
         }
     )
@@ -1378,7 +1575,9 @@ def test_correlated_occurrence_distinct_start_dates():
             "observation_period_end_date": [datetime(2021, 1, 1)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_period_df, overwrite=True)
@@ -1387,8 +1586,16 @@ def test_correlated_occurrence_distinct_start_dates():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "index", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "correlated", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "index",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "correlated",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1406,7 +1613,12 @@ def test_correlated_occurrence_distinct_start_dates():
                             "UseIndexEnd": False,
                         },
                         "IgnoreObservationPeriod": True,
-                        "Occurrence": {"Type": 2, "Count": 2, "IsDistinct": True, "CountColumn": "START_DATE"},
+                        "Occurrence": {
+                            "Type": 2,
+                            "Count": 2,
+                            "IsDistinct": True,
+                            "CountColumn": "START_DATE",
+                        },
                     }
                 ],
             },
@@ -1414,16 +1626,22 @@ def test_correlated_occurrence_distinct_start_dates():
     )
 
     options = CohortBuildOptions()
-    ctx = BuildContext(conn, options, compile_codesets(conn, expression.concept_sets, options))
+    ctx = BuildContext(
+        conn, options, compile_codesets(conn, expression.concept_sets, options)
+    )
 
     events = build_primary_events(expression, ctx)
     assert events.count().execute() == 1
 
     # collapse correlated occurrences to a single start date, which should fail the distinct requirement
-    condition_df = condition_df.with_columns(pl.Series("condition_start_date", [datetime(2020, 1, 1)] * 3))
+    condition_df = condition_df.with_columns(
+        pl.Series("condition_start_date", [datetime(2020, 1, 1)] * 3)
+    )
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
 
-    ctx = BuildContext(conn, options, compile_codesets(conn, expression.concept_sets, options))
+    ctx = BuildContext(
+        conn, options, compile_codesets(conn, expression.concept_sets, options)
+    )
     events = build_primary_events(expression, ctx)
     assert events.count().execute() == 0
 
@@ -1434,7 +1652,13 @@ def test_correlated_window_respects_use_event_end():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -1465,7 +1689,9 @@ def test_correlated_window_respects_use_event_end():
             "observation_period_end_date": [datetime(2021, 1, 1)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_period_df, overwrite=True)
@@ -1473,8 +1699,16 @@ def test_correlated_window_respects_use_event_end():
 
     base_expression = {
         "ConceptSets": [
-            {"id": 1, "name": "index", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-            {"id": 2, "name": "correlated", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+            {
+                "id": 1,
+                "name": "index",
+                "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+            },
+            {
+                "id": 2,
+                "name": "correlated",
+                "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+            },
         ],
         "PrimaryCriteria": {
             "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1486,10 +1720,10 @@ def test_correlated_window_respects_use_event_end():
             "CriteriaList": [
                 {
                     "Criteria": {"ConditionOccurrence": {"CodesetId": 2}},
-                        "StartWindow": {
-                            "Start": {"Days": 0, "Coeff": 0},
-                            "UseEventEnd": True,
-                        },
+                    "StartWindow": {
+                        "Start": {"Days": 0, "Coeff": 0},
+                        "UseEventEnd": True,
+                    },
                     "IgnoreObservationPeriod": True,
                     "Occurrence": {"Type": 2, "Count": 1},
                 }
@@ -1499,15 +1733,25 @@ def test_correlated_window_respects_use_event_end():
 
     expression = CohortExpression.model_validate(base_expression)
     options = CohortBuildOptions()
-    ctx = BuildContext(conn, options, compile_codesets(conn, expression.concept_sets, options))
+    ctx = BuildContext(
+        conn, options, compile_codesets(conn, expression.concept_sets, options)
+    )
     events = build_primary_events(expression, ctx)
-    assert events.count().execute() == 1, "Correlated window should use event end when flag is set"
+    assert events.count().execute() == 1, (
+        "Correlated window should use event end when flag is set"
+    )
 
-    base_expression["AdditionalCriteria"]["CriteriaList"][0]["StartWindow"]["UseEventEnd"] = False
+    base_expression["AdditionalCriteria"]["CriteriaList"][0]["StartWindow"][
+        "UseEventEnd"
+    ] = False
     expression = CohortExpression.model_validate(base_expression)
-    ctx = BuildContext(conn, options, compile_codesets(conn, expression.concept_sets, options))
+    ctx = BuildContext(
+        conn, options, compile_codesets(conn, expression.concept_sets, options)
+    )
     events = build_primary_events(expression, ctx)
-    assert events.count().execute() == 0, "Without UseEventEnd the correlated event should be outside the window"
+    assert events.count().execute() == 0, (
+        "Without UseEventEnd the correlated event should be outside the window"
+    )
 
 
 def test_visit_detail_correlated_requires_same_visit():
@@ -1516,7 +1760,13 @@ def test_visit_detail_correlated_requires_same_visit():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -1556,7 +1806,9 @@ def test_visit_detail_correlated_requires_same_visit():
             "observation_period_end_date": [datetime(2021, 1, 1)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("visit_occurrence", visit_occurrence_df, overwrite=True)
     conn.create_table("visit_detail", visit_detail_df, overwrite=True)
@@ -1566,8 +1818,16 @@ def test_visit_detail_correlated_requires_same_visit():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "visit", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "visit detail", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "visit",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "visit detail",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [
@@ -1596,18 +1856,23 @@ def test_visit_detail_correlated_requires_same_visit():
     )
 
     options = CohortBuildOptions()
-    ctx = BuildContext(conn, options, compile_codesets(conn, expression.concept_sets, options))
+    ctx = BuildContext(
+        conn, options, compile_codesets(conn, expression.concept_sets, options)
+    )
     events = build_primary_events(expression, ctx)
     assert events.count().execute() == 1
     assert events.to_polars()["visit_occurrence_id"].to_list() == [1]
 
     # move the visit detail to a different visit_occurrence_id; no visit should satisfy the correlated block
-    visit_detail_df = visit_detail_df.with_columns(pl.Series("visit_occurrence_id", [2]))
+    visit_detail_df = visit_detail_df.with_columns(
+        pl.Series("visit_occurrence_id", [2])
+    )
     conn.create_table("visit_detail", visit_detail_df, overwrite=True)
-    ctx = BuildContext(conn, options, compile_codesets(conn, expression.concept_sets, options))
+    ctx = BuildContext(
+        conn, options, compile_codesets(conn, expression.concept_sets, options)
+    )
     events = build_primary_events(expression, ctx)
     assert events.count().execute() == 0
-
 
 
 def test_expression_limit_keeps_first_included_event():
@@ -1618,7 +1883,9 @@ def test_expression_limit_keeps_first_included_event():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -1643,7 +1910,9 @@ def test_expression_limit_keeps_first_included_event():
             "condition_end_date": [datetime(2020, 1, 2), datetime(2020, 3, 2)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -1659,7 +1928,11 @@ def test_expression_limit_keeps_first_included_event():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1690,7 +1963,10 @@ def test_criteria_group_handles_demographics_and_counts():
     conn.create_table(
         "concept_ancestor",
         pl.DataFrame(
-            {"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
         ),
         overwrite=True,
     )
@@ -1750,8 +2026,14 @@ def test_criteria_group_handles_demographics_and_counts():
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1, 2],
-            "observation_period_start_date": [datetime(2019, 1, 1), datetime(2019, 1, 1)],
-            "observation_period_end_date": [datetime(2021, 12, 31), datetime(2021, 12, 31)],
+            "observation_period_start_date": [
+                datetime(2019, 1, 1),
+                datetime(2019, 1, 1),
+            ],
+            "observation_period_end_date": [
+                datetime(2021, 12, 31),
+                datetime(2021, 12, 31),
+            ],
         }
     )
 
@@ -1763,8 +2045,16 @@ def test_criteria_group_handles_demographics_and_counts():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "measurement", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "measurement",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1820,7 +2110,10 @@ def test_criteria_group_at_least_counts_matches():
     conn.create_table(
         "concept_ancestor",
         pl.DataFrame(
-            {"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
         ),
         overwrite=True,
     )
@@ -1860,8 +2153,22 @@ def test_criteria_group_at_least_counts_matches():
             "visit_occurrence_id": [2],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507], "race_concept_id": [0], "ethnicity_concept_id": [0]})
-    observation_period_df = pl.DataFrame({"person_id": [1], "observation_period_start_date": [datetime(2019, 1, 1)], "observation_period_end_date": [datetime(2021, 12, 31)]})
+    person_df = pl.DataFrame(
+        {
+            "person_id": [1],
+            "year_of_birth": [1950],
+            "gender_concept_id": [8507],
+            "race_concept_id": [0],
+            "ethnicity_concept_id": [0],
+        }
+    )
+    observation_period_df = pl.DataFrame(
+        {
+            "person_id": [1],
+            "observation_period_start_date": [datetime(2019, 1, 1)],
+            "observation_period_end_date": [datetime(2021, 12, 31)],
+        }
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("measurement", measurement_df, overwrite=True)
@@ -1871,8 +2178,16 @@ def test_criteria_group_at_least_counts_matches():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "measurement", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "measurement",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -1918,7 +2233,10 @@ def test_custom_era_end_strategy_extends_events():
     conn.create_table(
         "concept_ancestor",
         pl.DataFrame(
-            {"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
         ),
         overwrite=True,
     )
@@ -1956,8 +2274,22 @@ def test_custom_era_end_strategy_extends_events():
             "days_supply": [10, 10],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507], "race_concept_id": [0], "ethnicity_concept_id": [0]})
-    observation_period_df = pl.DataFrame({"person_id": [1], "observation_period_start_date": [datetime(2019, 1, 1)], "observation_period_end_date": [datetime(2021, 12, 31)]})
+    person_df = pl.DataFrame(
+        {
+            "person_id": [1],
+            "year_of_birth": [1950],
+            "gender_concept_id": [8507],
+            "race_concept_id": [0],
+            "ethnicity_concept_id": [0],
+        }
+    )
+    observation_period_df = pl.DataFrame(
+        {
+            "person_id": [1],
+            "observation_period_start_date": [datetime(2019, 1, 1)],
+            "observation_period_end_date": [datetime(2021, 12, 31)],
+        }
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("drug_exposure", drug_exposure_df, overwrite=True)
@@ -1967,15 +2299,25 @@ def test_custom_era_end_strategy_extends_events():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "drug", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "drug",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
                 "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
                 "PrimaryCriteriaLimit": {"Type": "All"},
             },
-            "EndStrategy": {"CustomEra": {"DrugCodesetId": 2, "GapDays": 5, "Offset": 0}},
+            "EndStrategy": {
+                "CustomEra": {"DrugCodesetId": 2, "GapDays": 5, "Offset": 0}
+            },
             "CollapseSettings": {"CollapseType": "ERA", "EraPad": 0},
         }
     )
@@ -2001,7 +2343,10 @@ def test_inclusion_rule_counts_prior_events_with_open_start_window():
     conn.create_table(
         "concept_ancestor",
         pl.DataFrame(
-            {"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
         ),
         overwrite=True,
     )
@@ -2028,7 +2373,9 @@ def test_inclusion_rule_counts_prior_events_with_open_start_window():
             "visit_occurrence_id": [1, 2],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1950], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -2044,7 +2391,11 @@ def test_inclusion_rule_counts_prior_events_with_open_start_window():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 101}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 101}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -2080,7 +2431,9 @@ def test_inclusion_rule_counts_prior_events_with_open_start_window():
     events = build_primary_events(expression, ctx)
     result = events.to_polars()
 
-    assert result.is_empty(), "Events with a prior occurrence should be excluded when start window is open-ended"
+    assert result.is_empty(), (
+        "Events with a prior occurrence should be excluded when start window is open-ended"
+    )
 
 
 def test_end_window_defaults_to_index_start_when_unspecified():
@@ -2089,7 +2442,13 @@ def test_end_window_defaults_to_index_start_when_unspecified():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -2125,7 +2484,9 @@ def test_end_window_defaults_to_index_start_when_unspecified():
             "visit_occurrence_id": [1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -2142,8 +2503,16 @@ def test_end_window_defaults_to_index_start_when_unspecified():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "measurement", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "measurement",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -2158,8 +2527,14 @@ def test_end_window_defaults_to_index_start_when_unspecified():
                         "CriteriaList": [
                             {
                                 "Criteria": {"Measurement": {"CodesetId": 2}},
-                                "StartWindow": {"Start": {"Coeff": -1}, "End": {"Coeff": 1}},
-                                "EndWindow": {"Start": {"Days": 1, "Coeff": 1}, "End": {"Coeff": 1}},
+                                "StartWindow": {
+                                    "Start": {"Coeff": -1},
+                                    "End": {"Coeff": 1},
+                                },
+                                "EndWindow": {
+                                    "Start": {"Days": 1, "Coeff": 1},
+                                    "End": {"Coeff": 1},
+                                },
                                 "Occurrence": {"Type": 0, "Count": 0},
                             }
                         ],
@@ -2189,7 +2564,9 @@ def test_correlated_criteria_apply_observation_window_when_missing():
     conn.create_table("concept", concept_df, overwrite=True)
     conn.create_table(
         "concept_ancestor",
-        pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}),
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
         overwrite=True,
     )
     conn.create_table(
@@ -2246,8 +2623,16 @@ def test_correlated_criteria_apply_observation_window_when_missing():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "procedure", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "procedure",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [
@@ -2259,7 +2644,9 @@ def test_correlated_criteria_apply_observation_window_when_missing():
                                 "Type": "ALL",
                                 "CriteriaList": [
                                     {
-                                        "Criteria": {"ProcedureOccurrence": {"CodesetId": 2}},
+                                        "Criteria": {
+                                            "ProcedureOccurrence": {"CodesetId": 2}
+                                        },
                                         "StartWindow": {
                                             "Start": {"Coeff": -1},
                                             "End": {"Days": 180, "Coeff": -1},
@@ -2296,7 +2683,13 @@ def test_custom_era_deduplicates_concept_and_source_exposures():
     concept_df = pl.DataFrame({"concept_id": [10], "invalid_reason": [""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -2338,14 +2731,20 @@ def test_custom_era_deduplicates_concept_and_source_exposures():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 0, "name": "drug", "expression": {"items": [{"concept": {"CONCEPT_ID": 10}}]}},
+                {
+                    "id": 0,
+                    "name": "drug",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 10}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"DrugExposure": {"CodesetId": 0}}],
                 "ObservationWindow": {"PriorDays": 0, "PostDays": 0},
                 "PrimaryCriteriaLimit": {"Type": "All"},
             },
-            "EndStrategy": {"CustomEra": {"DrugCodesetId": 0, "GapDays": 60, "Offset": 0}},
+            "EndStrategy": {
+                "CustomEra": {"DrugCodesetId": 0, "GapDays": 60, "Offset": 0}
+            },
             "CollapseSettings": {"CollapseType": "ERA", "EraPad": 0},
             "ExpressionLimit": {"Type": "All"},
         }
@@ -2366,7 +2765,13 @@ def test_visit_detail_correlated_respects_restrict_visit_flag():
     concept_df = pl.DataFrame({"concept_id": [1, 2], "invalid_reason": ["", ""]})
     empty_int = pl.Series([], dtype=pl.Int64)
     conn.create_table("concept", concept_df, overwrite=True)
-    conn.create_table("concept_ancestor", pl.DataFrame({"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}), overwrite=True)
+    conn.create_table(
+        "concept_ancestor",
+        pl.DataFrame(
+            {"ancestor_concept_id": empty_int, "descendant_concept_id": empty_int}
+        ),
+        overwrite=True,
+    )
     conn.create_table(
         "concept_relationship",
         pl.DataFrame(
@@ -2406,7 +2811,9 @@ def test_visit_detail_correlated_respects_restrict_visit_flag():
             "care_site_id": [1],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     observation_period_df = pl.DataFrame(
         {
             "person_id": [1],
@@ -2423,8 +2830,16 @@ def test_visit_detail_correlated_respects_restrict_visit_flag():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "visit", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
-                {"id": 2, "name": "detail", "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]}},
+                {
+                    "id": 1,
+                    "name": "visit",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
+                {
+                    "id": 2,
+                    "name": "detail",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 2}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"VisitOccurrence": {"CodesetId": 1}}],
@@ -2481,7 +2896,10 @@ def test_primary_limit_and_collapse_preserve_synthetic_ids():
     conn.create_table(
         "concept_ancestor",
         pl.DataFrame(
-            {"ancestor_concept_id": pl.Series([], dtype=pl.Int64), "descendant_concept_id": pl.Series([], dtype=pl.Int64)}
+            {
+                "ancestor_concept_id": pl.Series([], dtype=pl.Int64),
+                "descendant_concept_id": pl.Series([], dtype=pl.Int64),
+            }
         ),
         overwrite=True,
     )
@@ -2511,11 +2929,20 @@ def test_primary_limit_and_collapse_preserve_synthetic_ids():
     observation_df = pl.DataFrame(
         {
             "person_id": [1, 2],
-            "observation_period_start_date": [datetime(2018, 1, 1), datetime(2018, 1, 1)],
+            "observation_period_start_date": [
+                datetime(2018, 1, 1),
+                datetime(2018, 1, 1),
+            ],
             "observation_period_end_date": [datetime(2021, 1, 1), datetime(2021, 1, 1)],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1, 2], "year_of_birth": [1950, 1955], "gender_concept_id": [8507, 8507]})
+    person_df = pl.DataFrame(
+        {
+            "person_id": [1, 2],
+            "year_of_birth": [1950, 1955],
+            "gender_concept_id": [8507, 8507],
+        }
+    )
 
     conn.create_table("condition_occurrence", condition_df, overwrite=True)
     conn.create_table("observation_period", observation_df, overwrite=True)
@@ -2524,7 +2951,11 @@ def test_primary_limit_and_collapse_preserve_synthetic_ids():
     expression = CohortExpression.model_validate(
         {
             "ConceptSets": [
-                {"id": 1, "name": "condition", "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]}},
+                {
+                    "id": 1,
+                    "name": "condition",
+                    "expression": {"items": [{"concept": {"CONCEPT_ID": 1}}]},
+                },
             ],
             "PrimaryCriteria": {
                 "CriteriaList": [{"ConditionOccurrence": {"CodesetId": 1}}],
@@ -2544,5 +2975,9 @@ def test_primary_limit_and_collapse_preserve_synthetic_ids():
 
     assert len(df) == 2
     assert df["person_id"].to_list() == [1, 2]
-    assert df["event_id"].to_list() == [1, 2], "Synthetic IDs must remain unique after primary-limit and collapse"
-    assert "_source_event_id" not in df.columns, "Internal source ids should be dropped before collapse output"
+    assert df["event_id"].to_list() == [1, 2], (
+        "Synthetic IDs must remain unique after primary-limit and collapse"
+    )
+    assert "_source_event_id" not in df.columns, (
+        "Internal source ids should be dropped before collapse output"
+    )

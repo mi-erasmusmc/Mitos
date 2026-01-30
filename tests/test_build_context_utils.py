@@ -173,7 +173,9 @@ def test_vocabulary_table_prefers_vocab_schema():
     assert ("table", "concept", "vocab") in conn.calls
 
     conn2 = DummyBackend(table_behavior="database")
-    ctx2 = BuildContext(conn2, CohortBuildOptions(cdm_schema="cdm"), FakeTable("codesets"))
+    ctx2 = BuildContext(
+        conn2, CohortBuildOptions(cdm_schema="cdm"), FakeTable("codesets")
+    )
     ctx2.vocabulary_table("concept")
     assert ("table", "concept", "cdm") in conn2.calls
 
@@ -199,7 +201,9 @@ def test_codeset_resource_cleanup_idempotent_and_handles_exceptions():
 
 
 def test_materialize_codesets_uses_create_table_with_database_and_drop_table():
-    options = CohortBuildOptions(temp_emulation_schema="catalog.schema", backend="databricks")
+    options = CohortBuildOptions(
+        temp_emulation_schema="catalog.schema", backend="databricks"
+    )
     conn = DummyBackend(table_behavior="database")
     expr = FakeExpr("SELECT 1")
 
@@ -219,7 +223,10 @@ def test_materialize_codesets_uses_create_table_with_database_and_drop_table():
     assert ("table", name, "catalog.schema") in conn.calls
 
     # analyze call emitted for databricks
-    assert ("raw_sql", f"ANALYZE TABLE catalog.schema.{name} COMPUTE STATISTICS") in conn.calls
+    assert (
+        "raw_sql",
+        f"ANALYZE TABLE catalog.schema.{name} COMPUTE STATISTICS",
+    ) in conn.calls
 
     # cleanup should drop by database with force=True
     resource.cleanup()
@@ -293,7 +300,9 @@ def test_materialize_respects_temp_emulation_schema_for_stages():
         ("cat.schema", False, None, False),
     ],
 )
-def test_materialize_core_temp_combinations(temp_emulation_schema, temp_flag, expected_db, expected_temp):
+def test_materialize_core_temp_combinations(
+    temp_emulation_schema, temp_flag, expected_db, expected_temp
+):
     options = CohortBuildOptions(temp_emulation_schema=temp_emulation_schema)
     conn = DummyBackend(table_behavior="always")
     ctx = BuildContext(conn, options, FakeTable("codesets"))
@@ -349,7 +358,9 @@ def test_profiling_branch_runs_for_duckdb_and_skips_for_others(tmp_path):
 
 
 def test_profiling_enable_failure_does_not_block_materialize(tmp_path):
-    conn = DummyBackend(table_behavior="always", raw_sql_side_effects=[Exception("fail profiling")])
+    conn = DummyBackend(
+        table_behavior="always", raw_sql_side_effects=[Exception("fail profiling")]
+    )
     options = CohortBuildOptions(backend="duckdb", profile_dir=str(tmp_path))
     ctx = BuildContext(conn, options, FakeTable("codesets"))
     ctx.materialize(FakeExpr("SELECT 1"), label="prof", temp=False, analyze=False)
@@ -373,10 +384,15 @@ def test_analyze_branch_per_backend_and_failure_handling():
     ctx_db = BuildContext(conn_db, options_db, FakeTable("codesets"))
     ctx_db.materialize(FakeExpr("SELECT 1"), label="an", temp=False, analyze=True)
     raw_calls_db = [c[1] for c in conn_db.calls if c[0] == "raw_sql"]
-    assert any(call.startswith("ANALYZE TABLE ") and "COMPUTE STATISTICS" in call for call in raw_calls_db)
+    assert any(
+        call.startswith("ANALYZE TABLE ") and "COMPUTE STATISTICS" in call
+        for call in raw_calls_db
+    )
 
     # analyze failure swallowed
-    conn_fail = DummyBackend(table_behavior="always", raw_sql_side_effects=[Exception("analyze fail")])
+    conn_fail = DummyBackend(
+        table_behavior="always", raw_sql_side_effects=[Exception("analyze fail")]
+    )
     options_fail = CohortBuildOptions(backend="postgres")
     ctx_fail = BuildContext(conn_fail, options_fail, FakeTable("codesets"))
     ctx_fail.materialize(FakeExpr("SELECT 1"), label="an", temp=False, analyze=True)
@@ -387,7 +403,9 @@ def test_materialize_registers_cleanup_and_close_cleans_up():
     drop_backend = DummyBackend(table_behavior="always", drop_raises=1)
     options = CohortBuildOptions()
     dropper_called = []
-    codesets = CodesetResource(table=FakeTable("codesets"), _dropper=lambda: dropper_called.append("codeset"))
+    codesets = CodesetResource(
+        table=FakeTable("codesets"), _dropper=lambda: dropper_called.append("codeset")
+    )
     ctx = BuildContext(drop_backend, options, codesets)
 
     table = ctx.materialize(FakeExpr("SELECT 1"), label="cl", temp=False, analyze=False)
@@ -437,7 +455,11 @@ def test_union_helpers_handle_none_and_distinct_flags():
 def test_write_cohort_table_creates_result_table_in_schema():
     events = ibis.memtable(
         [{"person_id": 1, "start_date": "2020-01-01", "end_date": "2020-01-02"}],
-        schema={"person_id": "int64", "start_date": "timestamp", "end_date": "timestamp"},
+        schema={
+            "person_id": "int64",
+            "start_date": "timestamp",
+            "end_date": "timestamp",
+        },
     )
     options = CohortBuildOptions(
         result_schema="scratch.schema",

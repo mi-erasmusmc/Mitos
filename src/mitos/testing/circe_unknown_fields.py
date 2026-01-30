@@ -79,7 +79,9 @@ def iter_unknown_circe_fields(
                         for crit_type, crit_payload in item.items():
                             if crit_type in fields_by_class:
                                 yield from walk_obj(
-                                    crit_payload, crit_type, f"{path}.{prop}[{i}].{crit_type}"
+                                    crit_payload,
+                                    crit_type,
+                                    f"{path}.{prop}[{i}].{crit_type}",
                                 )
                             else:
                                 yield UnknownCirceField(
@@ -101,4 +103,3 @@ def iter_unknown_circe_fields(
                         yield from walk_obj(item, nested, f"{path}.{prop}[{i}]")
 
     yield from walk_obj(cohort_json, root_class, root_class)
-

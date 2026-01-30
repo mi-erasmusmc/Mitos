@@ -33,4 +33,3 @@ def test_phenotype_218_synthetic_dataset_expected_people():
         assert got_people.isdisjoint(expectations.exclude_person_ids)
     finally:
         ctx.close()
-

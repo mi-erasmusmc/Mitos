@@ -67,7 +67,9 @@ _JAVAP_CLASS_RE = re.compile(
     r"(?P<name>[A-Za-z0-9_.$]+)\b"
     r"(?:\s+extends\s+(?P<base>[A-Za-z0-9_.$]+)\b)?"
 )
-_JAVAP_FIELD_DECL_RE = re.compile(r"^\s*public\s+(?P<type>[^();]+?)\s+(?P<name>[A-Za-z0-9_]+);?\s*$")
+_JAVAP_FIELD_DECL_RE = re.compile(
+    r"^\s*public\s+(?P<type>[^();]+?)\s+(?P<name>[A-Za-z0-9_]+);?\s*$"
+)
 _JAVAP_DESCRIPTOR_RE = re.compile(r"^\s*descriptor:\s+(?P<desc>\S+)\s*$")
 _JAVAP_SIGNATURE_RE = re.compile(r"^\s*Signature:\s+(?P<sig>\S+)\s*$")
 _JAVAP_JSONPROP_VALUE_RE = re.compile(r'^\s*value="(?P<value>[^"]+)"\s*$')
@@ -75,7 +77,11 @@ _JAVAP_JSONPROP_VALUE_RE = re.compile(r'^\s*value="(?P<value>[^"]+)"\s*$')
 
 def _simplify_descriptor(descriptor: str, signature: str | None) -> str:
     # Prefer signature when present for generic collections (List<...>).
-    if signature and signature.startswith("Ljava/util/List<") and signature.endswith(">;"):
+    if (
+        signature
+        and signature.startswith("Ljava/util/List<")
+        and signature.endswith(">;")
+    ):
         # Example: Ljava/util/List<Lorg/ohdsi/circe/cohortdefinition/InclusionRule;>;
         inner = signature.removeprefix("Ljava/util/List<").removesuffix(">;")
         if inner.startswith("L") and inner.endswith(";"):
@@ -86,7 +92,9 @@ def _simplify_descriptor(descriptor: str, signature: str | None) -> str:
     if descriptor == "Ljava/lang/String;":
         return "String"
     if descriptor in {"I", "J", "D", "F", "Z"}:
-        return {"I": "int", "J": "long", "D": "double", "F": "float", "Z": "boolean"}[descriptor]
+        return {"I": "int", "J": "long", "D": "double", "F": "float", "Z": "boolean"}[
+            descriptor
+        ]
 
     if descriptor.startswith("[") and descriptor.endswith(";"):
         # Arrays of objects.
@@ -111,7 +119,9 @@ def extract_circe_field_inventory_from_jar(
 
     javap_exe = shutil.which("javap")
     if not javap_exe:
-        raise RuntimeError("javap not found; install a JDK to extract Circe inventory from jar.")
+        raise RuntimeError(
+            "javap not found; install a JDK to extract Circe inventory from jar."
+        )
 
     class_names: list[str] = []
     with zipfile.ZipFile(circe_jar) as zf:
@@ -187,7 +197,9 @@ def extract_circe_field_inventory_from_jar(
                     fields.append(
                         CirceField(
                             json_property=val_m.group("value"),
-                            java_type=_simplify_descriptor(current_descriptor, current_signature),
+                            java_type=_simplify_descriptor(
+                                current_descriptor, current_signature
+                            ),
                             java_field=current_field,
                         )
                     )
@@ -259,9 +271,13 @@ def extract_circe_field_inventory(
     """
     cohortdefinition_dir = cohortdefinition_dir.resolve()
     if cohortdefinition_dir.is_file() and cohortdefinition_dir.suffix == ".jar":
-        return extract_circe_field_inventory_from_jar(cohortdefinition_dir, include_inherited=include_inherited)
+        return extract_circe_field_inventory_from_jar(
+            cohortdefinition_dir, include_inherited=include_inherited
+        )
     if not cohortdefinition_dir.exists():
-        raise FileNotFoundError(f"Circe cohortdefinition directory not found: {cohortdefinition_dir}")
+        raise FileNotFoundError(
+            f"Circe cohortdefinition directory not found: {cohortdefinition_dir}"
+        )
 
     inventory: dict[str, list[CirceField]] = {}
     bases: dict[str, str] = {}
@@ -331,7 +347,9 @@ def extract_circe_field_inventory(
     return merged
 
 
-def circe_inventory_to_jsonable(inventory: dict[str, list[CirceField]]) -> dict[str, list[dict[str, str]]]:
+def circe_inventory_to_jsonable(
+    inventory: dict[str, list[CirceField]],
+) -> dict[str, list[dict[str, str]]]:
     out: dict[str, list[dict[str, str]]] = {}
     for class_name, fields in inventory.items():
         out[class_name] = [
@@ -345,7 +363,11 @@ def circe_inventory_to_jsonable(inventory: dict[str, list[CirceField]]) -> dict[
     return out
 
 
-def write_circe_field_inventory(path: Path, inventory: dict[str, list[CirceField]]) -> None:
+def write_circe_field_inventory(
+    path: Path, inventory: dict[str, list[CirceField]]
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload: dict[str, Any] = circe_inventory_to_jsonable(inventory)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )

@@ -30,7 +30,9 @@ def circe_sql_by_case_name() -> dict[str, str]:
         cfgs: dict[str, CirceSqlConfig] = {}
         for case in ALL:
             json_path = tmp_dir / f"{case.name}.json"
-            json_path.write_text(json.dumps(case.cohort_json, indent=2) + "\n", encoding="utf-8")
+            json_path.write_text(
+                json.dumps(case.cohort_json, indent=2) + "\n", encoding="utf-8"
+            )
             cfgs[case.name] = CirceSqlConfig(
                 json_path=json_path,
                 cdm_schema="main",
@@ -52,6 +54,8 @@ def test_fieldcase_matches_circe(case, circe_sql_by_case_name: dict[str, str]):
     if not rscript_available():
         pytest.skip("Rscript not available; FieldCases require CirceR + SqlRender.")
 
-    circe_rows, python_rows = run_fieldcase(case, circe_sql=circe_sql_by_case_name[case.name])
+    circe_rows, python_rows = run_fieldcase(
+        case, circe_sql=circe_sql_by_case_name[case.name]
+    )
     require_non_empty(circe_rows, case_name=case.name, engine="Circe")
     assert_same_rows(circe_rows, python_rows)

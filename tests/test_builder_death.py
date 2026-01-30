@@ -26,7 +26,13 @@ def test_death_builder_generates_events():
             "cause_concept_id": [701, 702],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1, 2], "year_of_birth": [1980, 1970], "gender_concept_id": [8507, 8532]})
+    person_df = pl.DataFrame(
+        {
+            "person_id": [1, 2],
+            "year_of_birth": [1980, 1970],
+            "gender_concept_id": [8507, 8532],
+        }
+    )
     conn.create_table("death", death_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)
 

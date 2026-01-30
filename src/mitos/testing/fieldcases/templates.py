@@ -45,7 +45,9 @@ def _base_cohort_expression(
                 {
                     criteria_type: {
                         **criteria_payload,
-                        **({"CodesetId": codeset_id} if include_primary_codeset else {}),
+                        **(
+                            {"CodesetId": codeset_id} if include_primary_codeset else {}
+                        ),
                     }
                 }
             ],
@@ -71,7 +73,9 @@ def _base_cohort_expression(
     }
 
 
-def _wide_window(*, use_index_end: bool | None = False, use_event_end: bool | None = False) -> dict:
+def _wide_window(
+    *, use_index_end: bool | None = False, use_event_end: bool | None = False
+) -> dict:
     return {
         "Start": {"Days": 36500, "Coeff": -1},
         "End": {"Days": 36500, "Coeff": 1},
@@ -243,13 +247,17 @@ def death_occurrence_start_date_cases() -> list[FieldCase]:
         builder.add_observation_period(
             person_id=1, start_date=date(1999, 1, 1), end_date=date(2002, 1, 1)
         )
-        builder.add_death(person_id=1, death_date=date(1999, 12, 31), cause_concept_id=1001)
+        builder.add_death(
+            person_id=1, death_date=date(1999, 12, 31), cause_concept_id=1001
+        )
 
         builder.add_person(person_id=2, year_of_birth=1980)
         builder.add_observation_period(
             person_id=2, start_date=date(1999, 1, 1), end_date=date(2002, 1, 1)
         )
-        builder.add_death(person_id=2, death_date=date(2000, 1, 1), cause_concept_id=1001)
+        builder.add_death(
+            person_id=2, death_date=date(2000, 1, 1), cause_concept_id=1001
+        )
 
     return [
         FieldCase(
@@ -266,7 +274,9 @@ def death_occurrence_start_date_cases() -> list[FieldCase]:
 def measurement_range_high_ratio_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         # denominator is 0 -> ratio NULL via Circe NULLIF; should not satisfy predicates
         builder.add_measurement(
             person_id=1,
@@ -276,7 +286,9 @@ def measurement_range_high_ratio_cases() -> list[FieldCase]:
             range_high=0.0,
         )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         # ratio = 1 / 2 = 0.5
         builder.add_measurement(
             person_id=2,
@@ -286,7 +298,9 @@ def measurement_range_high_ratio_cases() -> list[FieldCase]:
             range_high=2.0,
         )
         builder.add_person(person_id=3)
-        builder.add_observation_period(person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         # ratio = 1 / 4 = 0.25
         builder.add_measurement(
             person_id=3,
@@ -304,8 +318,7 @@ def measurement_range_high_ratio_cases() -> list[FieldCase]:
                 {"RangeHighRatio": {"Value": 0.6, "Op": "lte"}},
             ),
             build_omop=build,
-        )
-        ,
+        ),
         FieldCase(
             name="measurement_range_high_ratio_gt_discriminator",
             cohort_json=_base_cohort_expression(
@@ -353,8 +366,7 @@ def measurement_range_high_cases() -> list[FieldCase]:
                 {"RangeHigh": {"Value": 6.0, "Op": "gt"}},
             ),
             build_omop=build,
-        )
-        ,
+        ),
         FieldCase(
             name="measurement_range_high_gte_boundary",
             cohort_json=_base_cohort_expression(
@@ -369,7 +381,9 @@ def measurement_range_high_cases() -> list[FieldCase]:
 def procedure_occurrence_procedure_source_concept_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_procedure_occurrence(
             person_id=1,
             procedure_concept_id=1001,
@@ -377,7 +391,9 @@ def procedure_occurrence_procedure_source_concept_cases() -> list[FieldCase]:
             procedure_source_concept_id=111,
         )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_procedure_occurrence(
             person_id=2,
             procedure_concept_id=1001,
@@ -385,7 +401,9 @@ def procedure_occurrence_procedure_source_concept_cases() -> list[FieldCase]:
             procedure_source_concept_id=222,
         )
         builder.add_person(person_id=3)
-        builder.add_observation_period(person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_procedure_occurrence(
             person_id=3,
             procedure_concept_id=1001,
@@ -402,8 +420,7 @@ def procedure_occurrence_procedure_source_concept_cases() -> list[FieldCase]:
                 extra_concept_sets=[_concept_set(codeset_id=2, concept_id=111)],
             ),
             build_omop=build,
-        )
-        ,
+        ),
         FieldCase(
             name="procedure_occurrence_procedure_source_concept_eq_discriminator_2",
             cohort_json=_base_cohort_expression(
@@ -419,7 +436,9 @@ def procedure_occurrence_procedure_source_concept_cases() -> list[FieldCase]:
 def visit_occurrence_visit_source_concept_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_occurrence(
             person_id=1,
             visit_start_date=date(2000, 6, 1),
@@ -428,7 +447,9 @@ def visit_occurrence_visit_source_concept_cases() -> list[FieldCase]:
             visit_source_concept_id=555,
         )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_occurrence(
             person_id=2,
             visit_start_date=date(2000, 6, 2),
@@ -437,7 +458,9 @@ def visit_occurrence_visit_source_concept_cases() -> list[FieldCase]:
             visit_source_concept_id=666,
         )
         builder.add_person(person_id=3)
-        builder.add_observation_period(person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_occurrence(
             person_id=3,
             visit_start_date=date(2000, 6, 3),
@@ -455,8 +478,7 @@ def visit_occurrence_visit_source_concept_cases() -> list[FieldCase]:
                 extra_concept_sets=[_concept_set(codeset_id=2, concept_id=555)],
             ),
             build_omop=build,
-        )
-        ,
+        ),
         FieldCase(
             name="visit_occurrence_visit_source_concept_eq_discriminator_2",
             cohort_json=_base_cohort_expression(
@@ -472,7 +494,9 @@ def visit_occurrence_visit_source_concept_cases() -> list[FieldCase]:
 def visit_detail_visit_detail_source_concept_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_detail(
             person_id=1,
             visit_detail_concept_id=1001,
@@ -481,7 +505,9 @@ def visit_detail_visit_detail_source_concept_cases() -> list[FieldCase]:
             visit_detail_source_concept_id=7001,
         )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_detail(
             person_id=2,
             visit_detail_concept_id=1001,
@@ -490,7 +516,9 @@ def visit_detail_visit_detail_source_concept_cases() -> list[FieldCase]:
             visit_detail_source_concept_id=7002,
         )
         builder.add_person(person_id=3)
-        builder.add_observation_period(person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_detail(
             person_id=3,
             visit_detail_concept_id=1001,
@@ -508,8 +536,7 @@ def visit_detail_visit_detail_source_concept_cases() -> list[FieldCase]:
                 extra_concept_sets=[_concept_set(codeset_id=2, concept_id=7001)],
             ),
             build_omop=build,
-        )
-        ,
+        ),
         FieldCase(
             name="visit_detail_source_concept_eq_discriminator_2",
             cohort_json=_base_cohort_expression(
@@ -521,10 +548,13 @@ def visit_detail_visit_detail_source_concept_cases() -> list[FieldCase]:
         ),
     ]
 
+
 def visit_detail_codeset_id_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_detail(
             person_id=1,
             visit_detail_concept_id=1001,
@@ -532,7 +562,9 @@ def visit_detail_codeset_id_cases() -> list[FieldCase]:
             visit_detail_end_date=date(2000, 6, 1),
         )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_visit_detail(
             person_id=2,
             visit_detail_concept_id=2002,
@@ -558,10 +590,13 @@ def visit_detail_codeset_id_cases() -> list[FieldCase]:
         ),
     ]
 
+
 def condition_occurrence_condition_source_concept_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_occurrence(
             person_id=1,
             condition_concept_id=1001,
@@ -596,10 +631,13 @@ def condition_occurrence_condition_source_concept_cases() -> list[FieldCase]:
         ),
     ]
 
+
 def condition_occurrence_condition_status_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_occurrence(
             person_id=1,
             condition_concept_id=1001,
@@ -608,7 +646,9 @@ def condition_occurrence_condition_status_cases() -> list[FieldCase]:
         )
 
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_occurrence(
             person_id=2,
             condition_concept_id=1001,
@@ -639,7 +679,9 @@ def condition_occurrence_condition_status_cases() -> list[FieldCase]:
 def condition_occurrence_condition_type_exclude_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_occurrence(
             person_id=1,
             condition_concept_id=1001,
@@ -676,7 +718,9 @@ def condition_occurrence_condition_type_exclude_cases() -> list[FieldCase]:
 def condition_era_occurrence_count_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_era(
             person_id=1,
             condition_concept_id=1001,
@@ -685,7 +729,9 @@ def condition_era_occurrence_count_cases() -> list[FieldCase]:
             condition_occurrence_count=1,
         )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_era(
             person_id=2,
             condition_concept_id=1001,
@@ -694,7 +740,9 @@ def condition_era_occurrence_count_cases() -> list[FieldCase]:
             condition_occurrence_count=2,
         )
         builder.add_person(person_id=3)
-        builder.add_observation_period(person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_era(
             person_id=3,
             condition_concept_id=1001,
@@ -722,10 +770,13 @@ def condition_era_occurrence_count_cases() -> list[FieldCase]:
         ),
     ]
 
+
 def numeric_range_extent_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_measurement(
             person_id=1,
             measurement_concept_id=1001,
@@ -735,7 +786,9 @@ def numeric_range_extent_cases() -> list[FieldCase]:
         )
 
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_measurement(
             person_id=2,
             measurement_concept_id=1001,
@@ -783,18 +836,36 @@ def criteria_group_count_demographic_age_gender_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         # Matches both Age and Gender
         builder.add_person(person_id=1, year_of_birth=1980, gender_concept_id=8507)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+        )
 
         # Matches Age only
         builder.add_person(person_id=2, year_of_birth=1980, gender_concept_id=8532)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 6, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+        )
 
         # Matches Gender only
         builder.add_person(person_id=3, year_of_birth=1995, gender_concept_id=8507)
-        builder.add_observation_period(person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=3, condition_concept_id=1001, condition_start_date=date(2000, 6, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=3,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+        )
 
     return [
         FieldCase(
@@ -813,7 +884,9 @@ def criteria_group_count_demographic_age_gender_cases() -> list[FieldCase]:
 def drug_era_era_length_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_drug_era(
             person_id=1,
             drug_concept_id=1001,
@@ -850,7 +923,9 @@ def drug_era_era_length_cases() -> list[FieldCase]:
 def dose_era_codeset_id_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_dose_era(
             person_id=1,
             drug_concept_id=1001,
@@ -885,10 +960,13 @@ def dose_era_codeset_id_cases() -> list[FieldCase]:
         ),
     ]
 
+
 def condition_occurrence_first_age_gender_date_visit_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1, year_of_birth=1980, gender_concept_id=8507)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         v1 = builder.add_visit_occurrence(
             person_id=1,
             visit_start_date=date(2000, 6, 1),
@@ -917,7 +995,9 @@ def condition_occurrence_first_age_gender_date_visit_cases() -> list[FieldCase]:
         )
 
         builder.add_person(person_id=2, year_of_birth=1995, gender_concept_id=8532)
-        builder.add_observation_period(person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_condition_occurrence(
             person_id=2,
             condition_concept_id=1001,
@@ -934,27 +1014,37 @@ def condition_occurrence_first_age_gender_date_visit_cases() -> list[FieldCase]:
         ),
         FieldCase(
             name="condition_occurrence_first_false_keeps_all",
-            cohort_json=_base_cohort_expression("ConditionOccurrence", {"First": False}),
+            cohort_json=_base_cohort_expression(
+                "ConditionOccurrence", {"First": False}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="condition_occurrence_age_gte_discriminator",
-            cohort_json=_base_cohort_expression("ConditionOccurrence", {"Age": {"Value": 18, "Op": "gte"}}),
+            cohort_json=_base_cohort_expression(
+                "ConditionOccurrence", {"Age": {"Value": 18, "Op": "gte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="condition_occurrence_age_lt_discriminator",
-            cohort_json=_base_cohort_expression("ConditionOccurrence", {"Age": {"Value": 18, "Op": "lt"}}),
+            cohort_json=_base_cohort_expression(
+                "ConditionOccurrence", {"Age": {"Value": 18, "Op": "lt"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="condition_occurrence_gender_discriminator",
-            cohort_json=_base_cohort_expression("ConditionOccurrence", {"Gender": [{"CONCEPT_ID": 8507}]}),
+            cohort_json=_base_cohort_expression(
+                "ConditionOccurrence", {"Gender": [{"CONCEPT_ID": 8507}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="condition_occurrence_gender_discriminator_2",
-            cohort_json=_base_cohort_expression("ConditionOccurrence", {"Gender": [{"CONCEPT_ID": 8532}]}),
+            cohort_json=_base_cohort_expression(
+                "ConditionOccurrence", {"Gender": [{"CONCEPT_ID": 8532}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
@@ -987,7 +1077,9 @@ def condition_occurrence_first_age_gender_date_visit_cases() -> list[FieldCase]:
 def measurement_basic_field_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_measurement(
             person_id=1,
             measurement_concept_id=1001,
@@ -1014,37 +1106,51 @@ def measurement_basic_field_cases() -> list[FieldCase]:
     return [
         FieldCase(
             name="measurement_value_as_number_lte_discriminator",
-            cohort_json=_base_cohort_expression("Measurement", {"ValueAsNumber": {"Value": 2.0, "Op": "lte"}}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"ValueAsNumber": {"Value": 2.0, "Op": "lte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="measurement_value_as_number_gte_discriminator",
-            cohort_json=_base_cohort_expression("Measurement", {"ValueAsNumber": {"Value": 2.0, "Op": "gte"}}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"ValueAsNumber": {"Value": 2.0, "Op": "gte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="measurement_value_as_concept_discriminator",
-            cohort_json=_base_cohort_expression("Measurement", {"ValueAsConcept": [{"CONCEPT_ID": 1111}]}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"ValueAsConcept": [{"CONCEPT_ID": 1111}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="measurement_value_as_concept_discriminator_2",
-            cohort_json=_base_cohort_expression("Measurement", {"ValueAsConcept": [{"CONCEPT_ID": 2222}]}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"ValueAsConcept": [{"CONCEPT_ID": 2222}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="measurement_unit_discriminator",
-            cohort_json=_base_cohort_expression("Measurement", {"Unit": [{"CONCEPT_ID": 9529}]}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"Unit": [{"CONCEPT_ID": 9529}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="measurement_unit_discriminator_2",
-            cohort_json=_base_cohort_expression("Measurement", {"Unit": [{"CONCEPT_ID": 3195625}]}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"Unit": [{"CONCEPT_ID": 3195625}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="measurement_range_low_gte_discriminator",
-            cohort_json=_base_cohort_expression("Measurement", {"RangeLow": {"Value": 1.0, "Op": "gte"}}),
+            cohort_json=_base_cohort_expression(
+                "Measurement", {"RangeLow": {"Value": 1.0, "Op": "gte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
@@ -1067,7 +1173,10 @@ def measurement_basic_field_cases() -> list[FieldCase]:
             name="measurement_measurement_type_exclude_discriminator",
             cohort_json=_base_cohort_expression(
                 "Measurement",
-                {"MeasurementType": [{"CONCEPT_ID": 111}], "MeasurementTypeExclude": True},
+                {
+                    "MeasurementType": [{"CONCEPT_ID": 111}],
+                    "MeasurementTypeExclude": True,
+                },
             ),
             build_omop=build,
         ),
@@ -1075,7 +1184,10 @@ def measurement_basic_field_cases() -> list[FieldCase]:
             name="measurement_measurement_type_include_discriminator",
             cohort_json=_base_cohort_expression(
                 "Measurement",
-                {"MeasurementType": [{"CONCEPT_ID": 111}], "MeasurementTypeExclude": False},
+                {
+                    "MeasurementType": [{"CONCEPT_ID": 111}],
+                    "MeasurementTypeExclude": False,
+                },
             ),
             build_omop=build,
         ),
@@ -1103,7 +1215,9 @@ def measurement_basic_field_cases() -> list[FieldCase]:
 def observation_basic_field_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_observation(
             person_id=1,
             observation_concept_id=1001,
@@ -1138,39 +1252,54 @@ def observation_basic_field_cases() -> list[FieldCase]:
         ),
         FieldCase(
             name="observation_value_as_number_lte_discriminator",
-            cohort_json=_base_cohort_expression("Observation", {"ValueAsNumber": {"Value": 2.0, "Op": "lte"}}),
+            cohort_json=_base_cohort_expression(
+                "Observation", {"ValueAsNumber": {"Value": 2.0, "Op": "lte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="observation_value_as_number_gte_discriminator",
-            cohort_json=_base_cohort_expression("Observation", {"ValueAsNumber": {"Value": 2.0, "Op": "gte"}}),
+            cohort_json=_base_cohort_expression(
+                "Observation", {"ValueAsNumber": {"Value": 2.0, "Op": "gte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="observation_value_as_concept_discriminator",
-            cohort_json=_base_cohort_expression("Observation", {"ValueAsConcept": [{"CONCEPT_ID": 1111}]}),
+            cohort_json=_base_cohort_expression(
+                "Observation", {"ValueAsConcept": [{"CONCEPT_ID": 1111}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="observation_value_as_concept_discriminator_2",
-            cohort_json=_base_cohort_expression("Observation", {"ValueAsConcept": [{"CONCEPT_ID": 2222}]}),
+            cohort_json=_base_cohort_expression(
+                "Observation", {"ValueAsConcept": [{"CONCEPT_ID": 2222}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="observation_unit_discriminator",
-            cohort_json=_base_cohort_expression("Observation", {"Unit": [{"CONCEPT_ID": 9529}]}),
+            cohort_json=_base_cohort_expression(
+                "Observation", {"Unit": [{"CONCEPT_ID": 9529}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="observation_unit_discriminator_2",
-            cohort_json=_base_cohort_expression("Observation", {"Unit": [{"CONCEPT_ID": 3195625}]}),
+            cohort_json=_base_cohort_expression(
+                "Observation", {"Unit": [{"CONCEPT_ID": 3195625}]}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="observation_type_exclude_discriminator",
             cohort_json=_base_cohort_expression(
                 "Observation",
-                {"ObservationType": [{"CONCEPT_ID": 111}], "ObservationTypeExclude": True},
+                {
+                    "ObservationType": [{"CONCEPT_ID": 111}],
+                    "ObservationTypeExclude": True,
+                },
             ),
             build_omop=build,
         ),
@@ -1178,7 +1307,10 @@ def observation_basic_field_cases() -> list[FieldCase]:
             name="observation_type_include_discriminator",
             cohort_json=_base_cohort_expression(
                 "Observation",
-                {"ObservationType": [{"CONCEPT_ID": 111}], "ObservationTypeExclude": False},
+                {
+                    "ObservationType": [{"CONCEPT_ID": 111}],
+                    "ObservationTypeExclude": False,
+                },
             ),
             build_omop=build,
         ),
@@ -1197,7 +1329,9 @@ def observation_basic_field_cases() -> list[FieldCase]:
 def drug_exposure_basic_field_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1, year_of_birth=1980)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_drug_exposure(
             person_id=1,
             drug_concept_id=1001,
@@ -1212,7 +1346,9 @@ def drug_exposure_basic_field_cases() -> list[FieldCase]:
         )
 
         builder.add_person(person_id=2, year_of_birth=2000)
-        builder.add_observation_period(person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_drug_exposure(
             person_id=2,
             drug_concept_id=1001,
@@ -1249,12 +1385,16 @@ def drug_exposure_basic_field_cases() -> list[FieldCase]:
         ),
         FieldCase(
             name="drug_exposure_age_gte_discriminator",
-            cohort_json=_base_cohort_expression("DrugExposure", {"Age": {"Value": 18, "Op": "gte"}}),
+            cohort_json=_base_cohort_expression(
+                "DrugExposure", {"Age": {"Value": 18, "Op": "gte"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
             name="drug_exposure_age_lt_discriminator",
-            cohort_json=_base_cohort_expression("DrugExposure", {"Age": {"Value": 18, "Op": "lt"}}),
+            cohort_json=_base_cohort_expression(
+                "DrugExposure", {"Age": {"Value": 18, "Op": "lt"}}
+            ),
             build_omop=build,
         ),
         FieldCase(
@@ -1279,7 +1419,9 @@ def drug_exposure_basic_field_cases() -> list[FieldCase]:
 def device_exposure_first_and_type_exclude_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_device_exposure(
             person_id=1,
             device_concept_id=1001,
@@ -1326,7 +1468,9 @@ def device_exposure_first_and_type_exclude_cases() -> list[FieldCase]:
 def procedure_occurrence_first_and_type_exclude_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_procedure_occurrence(
             person_id=1,
             procedure_concept_id=1001,
@@ -1348,7 +1492,9 @@ def procedure_occurrence_first_and_type_exclude_cases() -> list[FieldCase]:
         ),
         FieldCase(
             name="procedure_occurrence_first_false_keeps_all",
-            cohort_json=_base_cohort_expression("ProcedureOccurrence", {"First": False}),
+            cohort_json=_base_cohort_expression(
+                "ProcedureOccurrence", {"First": False}
+            ),
             build_omop=build,
         ),
         FieldCase(
@@ -1373,7 +1519,9 @@ def procedure_occurrence_first_and_type_exclude_cases() -> list[FieldCase]:
 def specimen_codeset_and_type_exclude_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_specimen(
             person_id=1,
             specimen_concept_id=1001,
@@ -1409,8 +1557,12 @@ def specimen_codeset_and_type_exclude_cases() -> list[FieldCase]:
 def observation_period_user_defined_period_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2000, 12, 31))
-        builder.add_observation_period(person_id=1, start_date=date(1990, 1, 1), end_date=date(1990, 12, 31))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2000, 12, 31)
+        )
+        builder.add_observation_period(
+            person_id=1, start_date=date(1990, 1, 1), end_date=date(1990, 12, 31)
+        )
 
     return [
         FieldCase(
@@ -1436,10 +1588,14 @@ def observation_period_user_defined_period_cases() -> list[FieldCase]:
     ]
 
 
-def visit_occurrence_provider_specialty_and_visit_type_exclude_cases() -> list[FieldCase]:
+def visit_occurrence_provider_specialty_and_visit_type_exclude_cases() -> list[
+    FieldCase
+]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         builder.add_provider(provider_id=10, specialty_concept_id=777)
         builder.add_provider(provider_id=11, specialty_concept_id=778)
         builder.add_visit_occurrence(
@@ -1514,11 +1670,25 @@ def visit_occurrence_provider_specialty_and_visit_type_exclude_cases() -> list[F
 def death_death_type_exclude_cases() -> list[FieldCase]:
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_death(person_id=1, death_date=date(2000, 6, 1), cause_concept_id=1001, death_type_concept_id=111)
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_death(
+            person_id=1,
+            death_date=date(2000, 6, 1),
+            cause_concept_id=1001,
+            death_type_concept_id=111,
+        )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_death(person_id=2, death_date=date(2000, 6, 2), cause_concept_id=1001, death_type_concept_id=222)
+        builder.add_observation_period(
+            person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_death(
+            person_id=2,
+            death_date=date(2000, 6, 2),
+            cause_concept_id=1001,
+            death_type_concept_id=222,
+        )
 
     return [
         FieldCase(
@@ -1559,30 +1729,61 @@ def occurrence_correlated_criteria_cases() -> list[FieldCase]:
 
     def build(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         v1 = builder.add_visit_occurrence(
             person_id=1,
             visit_start_date=date(2000, 6, 1),
             visit_end_date=date(2000, 6, 1),
             visit_concept_id=0,
         )
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v1)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=2002, condition_start_date=date(2000, 6, 2), visit_occurrence_id=v1)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=2002, condition_start_date=date(2000, 6, 3), visit_occurrence_id=v1)
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v1,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 2),
+            visit_occurrence_id=v1,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 3),
+            visit_occurrence_id=v1,
+        )
 
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         v2 = builder.add_visit_occurrence(
             person_id=2,
             visit_start_date=date(2000, 6, 1),
             visit_end_date=date(2000, 6, 1),
             visit_concept_id=0,
         )
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v2)
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=2002, condition_start_date=date(2000, 6, 2), visit_occurrence_id=v2)
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v2,
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 2),
+            visit_occurrence_id=v2,
+        )
 
         builder.add_person(person_id=3)
-        builder.add_observation_period(person_id=3, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+        builder.add_observation_period(
+            person_id=3, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
         v3 = builder.add_visit_occurrence(
             person_id=3,
             visit_start_date=date(2000, 6, 1),
@@ -1595,9 +1796,24 @@ def occurrence_correlated_criteria_cases() -> list[FieldCase]:
             visit_end_date=date(2000, 6, 2),
             visit_concept_id=0,
         )
-        builder.add_condition_occurrence(person_id=3, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v3)
-        builder.add_condition_occurrence(person_id=3, condition_concept_id=2002, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v3)
-        builder.add_condition_occurrence(person_id=3, condition_concept_id=2002, condition_start_date=date(2000, 6, 2), visit_occurrence_id=v4)
+        builder.add_condition_occurrence(
+            person_id=3,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v3,
+        )
+        builder.add_condition_occurrence(
+            person_id=3,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v3,
+        )
+        builder.add_condition_occurrence(
+            person_id=3,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 2),
+            visit_occurrence_id=v4,
+        )
 
     return [
         FieldCase(
@@ -1615,7 +1831,12 @@ def occurrence_correlated_criteria_cases() -> list[FieldCase]:
             cohort_json=base_expr(
                 _correlated_criteria_item(
                     criteria={"ConditionOccurrence": {"CodesetId": 2}},
-                    occurrence={"Type": 2, "Count": 2, "IsDistinct": True, "CountColumn": "VISIT_ID"},
+                    occurrence={
+                        "Type": 2,
+                        "Count": 2,
+                        "IsDistinct": True,
+                        "CountColumn": "VISIT_ID",
+                    },
                 )
             ),
             build_omop=build,
@@ -1625,7 +1846,12 @@ def occurrence_correlated_criteria_cases() -> list[FieldCase]:
             cohort_json=base_expr(
                 _correlated_criteria_item(
                     criteria={"ConditionOccurrence": {"CodesetId": 2}},
-                    occurrence={"Type": 2, "Count": 2, "IsDistinct": False, "CountColumn": "VISIT_ID"},
+                    occurrence={
+                        "Type": 2,
+                        "Count": 2,
+                        "IsDistinct": False,
+                        "CountColumn": "VISIT_ID",
+                    },
                 )
             ),
             build_omop=build,
@@ -1663,8 +1889,18 @@ def correlated_window_missing_days_cases() -> list[FieldCase]:
             visit_end_date=date(2000, 6, 1),
             visit_concept_id=0,
         )
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v1)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=2002, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v1)
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v1,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v1,
+        )
 
         builder.add_person(person_id=2)
         builder.add_observation_period(
@@ -1678,8 +1914,18 @@ def correlated_window_missing_days_cases() -> list[FieldCase]:
             visit_end_date=date(2000, 6, 1),
             visit_concept_id=0,
         )
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v2)
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=2002, condition_start_date=date(2000, 6, 2), visit_occurrence_id=v2)
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v2,
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 2),
+            visit_occurrence_id=v2,
+        )
 
     correlated = _correlated_criteria_item(
         criteria={"ConditionOccurrence": {"CodesetId": 2}},
@@ -1720,7 +1966,11 @@ def correlated_window_boundary_cases() -> list[FieldCase]:
             (2, date(2000, 5, 30)),  # outside
         ]:
             builder.add_person(person_id=person_id)
-            builder.add_observation_period(person_id=person_id, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+            builder.add_observation_period(
+                person_id=person_id,
+                start_date=date(1999, 1, 1),
+                end_date=date(2001, 1, 1),
+            )
             v = builder.add_visit_occurrence(
                 person_id=person_id,
                 visit_start_date=date(2000, 6, 1),
@@ -1758,7 +2008,11 @@ def correlated_window_boundary_cases() -> list[FieldCase]:
             (2, date(2000, 6, 5)),  # on index end (should match)
         ]:
             builder.add_person(person_id=person_id)
-            builder.add_observation_period(person_id=person_id, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+            builder.add_observation_period(
+                person_id=person_id,
+                start_date=date(1999, 1, 1),
+                end_date=date(2001, 1, 1),
+            )
             v = builder.add_visit_occurrence(
                 person_id=person_id,
                 visit_start_date=date(2000, 6, 1),
@@ -1796,7 +2050,11 @@ def correlated_window_boundary_cases() -> list[FieldCase]:
             (2, date(2000, 5, 30), date(2000, 5, 31)),  # end outside
         ]:
             builder.add_person(person_id=person_id)
-            builder.add_observation_period(person_id=person_id, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
+            builder.add_observation_period(
+                person_id=person_id,
+                start_date=date(1999, 1, 1),
+                end_date=date(2001, 1, 1),
+            )
             v = builder.add_visit_occurrence(
                 person_id=person_id,
                 visit_start_date=date(2000, 6, 1),
@@ -1917,7 +2175,13 @@ def observation_window_cases() -> list[FieldCase]:
     cohort = _base_cohort_expression("ConditionOccurrence", {})
     cohort["PrimaryCriteria"]["ObservationWindow"] = {"PriorDays": 2, "PostDays": 2}
     cohort["PrimaryCriteria"]["PrimaryCriteriaLimit"] = {"Type": "All"}
-    return [FieldCase(name="primary_observation_window_filters_by_op_bounds", cohort_json=cohort, build_omop=build)]
+    return [
+        FieldCase(
+            name="primary_observation_window_filters_by_op_bounds",
+            cohort_json=cohort,
+            build_omop=build,
+        )
+    ]
 
 
 def collapse_era_pad_cases() -> list[FieldCase]:
@@ -1977,17 +2241,56 @@ def correlated_restrict_visit_ignore_observation_cases() -> list[FieldCase]:
 
     def build_restrict(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
-        v1 = builder.add_visit_occurrence(person_id=1, visit_start_date=date(2000, 6, 1), visit_end_date=date(2000, 6, 1), visit_concept_id=0)
-        v2 = builder.add_visit_occurrence(person_id=1, visit_start_date=date(2000, 6, 2), visit_end_date=date(2000, 6, 2), visit_concept_id=0)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v1)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=2002, condition_start_date=date(2000, 6, 2), visit_occurrence_id=v2)
+        builder.add_observation_period(
+            person_id=1, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
+        v1 = builder.add_visit_occurrence(
+            person_id=1,
+            visit_start_date=date(2000, 6, 1),
+            visit_end_date=date(2000, 6, 1),
+            visit_concept_id=0,
+        )
+        v2 = builder.add_visit_occurrence(
+            person_id=1,
+            visit_start_date=date(2000, 6, 2),
+            visit_end_date=date(2000, 6, 2),
+            visit_concept_id=0,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v1,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 2),
+            visit_occurrence_id=v2,
+        )
 
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1))
-        v3 = builder.add_visit_occurrence(person_id=2, visit_start_date=date(2000, 6, 1), visit_end_date=date(2000, 6, 1), visit_concept_id=0)
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v3)
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=2002, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v3)
+        builder.add_observation_period(
+            person_id=2, start_date=date(1999, 1, 1), end_date=date(2001, 1, 1)
+        )
+        v3 = builder.add_visit_occurrence(
+            person_id=2,
+            visit_start_date=date(2000, 6, 1),
+            visit_end_date=date(2000, 6, 1),
+            visit_concept_id=0,
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v3,
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v3,
+        )
 
     restrict_visit_true = _correlated_criteria_item(
         criteria={"ConditionOccurrence": {"CodesetId": 2}},
@@ -2002,16 +2305,50 @@ def correlated_restrict_visit_ignore_observation_cases() -> list[FieldCase]:
 
     def build_ignore_op(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 6, 1), end_date=date(2000, 6, 1))
-        v1 = builder.add_visit_occurrence(person_id=1, visit_start_date=date(2000, 6, 1), visit_end_date=date(2000, 6, 1), visit_concept_id=0)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v1)
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=2002, condition_start_date=date(2000, 6, 5), visit_occurrence_id=v1)
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 6, 1), end_date=date(2000, 6, 1)
+        )
+        v1 = builder.add_visit_occurrence(
+            person_id=1,
+            visit_start_date=date(2000, 6, 1),
+            visit_end_date=date(2000, 6, 1),
+            visit_concept_id=0,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v1,
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 5),
+            visit_occurrence_id=v1,
+        )
 
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 6, 1), end_date=date(2000, 6, 10))
-        v2 = builder.add_visit_occurrence(person_id=2, visit_start_date=date(2000, 6, 1), visit_end_date=date(2000, 6, 1), visit_concept_id=0)
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 6, 1), visit_occurrence_id=v2)
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=2002, condition_start_date=date(2000, 6, 5), visit_occurrence_id=v2)
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 6, 1), end_date=date(2000, 6, 10)
+        )
+        v2 = builder.add_visit_occurrence(
+            person_id=2,
+            visit_start_date=date(2000, 6, 1),
+            visit_end_date=date(2000, 6, 1),
+            visit_concept_id=0,
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 1),
+            visit_occurrence_id=v2,
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=2002,
+            condition_start_date=date(2000, 6, 5),
+            visit_occurrence_id=v2,
+        )
 
     ignore_op_false = _correlated_criteria_item(
         criteria={"ConditionOccurrence": {"CodesetId": 2}},
@@ -2051,28 +2388,66 @@ def correlated_restrict_visit_ignore_observation_cases() -> list[FieldCase]:
 def date_range_extent_cases() -> list[FieldCase]:
     def build_start(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 15))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 15),
+        )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 7, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 7, 1),
+        )
 
     def build_end_inclusive(builder: OmopBuilder) -> None:
         builder.add_person(person_id=1)
-        builder.add_observation_period(person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=1, condition_concept_id=1001, condition_start_date=date(2000, 6, 30))
+        builder.add_observation_period(
+            person_id=1, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=1,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 6, 30),
+        )
         builder.add_person(person_id=2)
-        builder.add_observation_period(person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
-        builder.add_condition_occurrence(person_id=2, condition_concept_id=1001, condition_start_date=date(2000, 7, 1))
+        builder.add_observation_period(
+            person_id=2, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1)
+        )
+        builder.add_condition_occurrence(
+            person_id=2,
+            condition_concept_id=1001,
+            condition_start_date=date(2000, 7, 1),
+        )
 
     cohort = _base_cohort_expression(
         "ConditionOccurrence",
-        {"OccurrenceStartDate": {"Value": "2000-06-01", "Op": "bt", "Extent": "2000-06-30"}},
+        {
+            "OccurrenceStartDate": {
+                "Value": "2000-06-01",
+                "Op": "bt",
+                "Extent": "2000-06-30",
+            }
+        },
     )
     cohort["PrimaryCriteria"]["PrimaryCriteriaLimit"] = {"Type": "All"}
     return [
-        FieldCase(name="date_range_between_uses_extent", cohort_json=cohort, build_omop=build_start),
-        FieldCase(name="date_range_between_end_inclusive", cohort_json=cohort, build_omop=build_end_inclusive),
+        FieldCase(
+            name="date_range_between_uses_extent",
+            cohort_json=cohort,
+            build_omop=build_start,
+        ),
+        FieldCase(
+            name="date_range_between_end_inclusive",
+            cohort_json=cohort,
+            build_omop=build_end_inclusive,
+        ),
     ]
 
 
@@ -2097,21 +2472,58 @@ def correlated_criteria_inherited_field_cases() -> list[FieldCase]:
         def build(builder: OmopBuilder) -> None:
             for person_id, corr_events in [(1, count), (2, max(count - 1, 0))]:
                 builder.add_person(person_id=person_id)
-                builder.add_observation_period(person_id=person_id, start_date=date(2000, 1, 1), end_date=date(2001, 1, 1))
+                builder.add_observation_period(
+                    person_id=person_id,
+                    start_date=date(2000, 1, 1),
+                    end_date=date(2001, 1, 1),
+                )
                 if criteria_type == "DrugEra":
-                    builder.add_drug_era(person_id=person_id, drug_concept_id=1001, drug_era_start_date=date(2000, 6, 1), drug_era_end_date=date(2000, 6, 2))
+                    builder.add_drug_era(
+                        person_id=person_id,
+                        drug_concept_id=1001,
+                        drug_era_start_date=date(2000, 6, 1),
+                        drug_era_end_date=date(2000, 6, 2),
+                    )
                 elif criteria_type == "DrugExposure":
-                    builder.add_drug_exposure(person_id=person_id, drug_concept_id=1001, drug_exposure_start_date=date(2000, 6, 1))
+                    builder.add_drug_exposure(
+                        person_id=person_id,
+                        drug_concept_id=1001,
+                        drug_exposure_start_date=date(2000, 6, 1),
+                    )
                 elif criteria_type == "Measurement":
-                    builder.add_measurement(person_id=person_id, measurement_concept_id=1001, measurement_date=date(2000, 6, 1), value_as_number=1.0, range_low=0.0, range_high=2.0)
+                    builder.add_measurement(
+                        person_id=person_id,
+                        measurement_concept_id=1001,
+                        measurement_date=date(2000, 6, 1),
+                        value_as_number=1.0,
+                        range_low=0.0,
+                        range_high=2.0,
+                    )
                 elif criteria_type == "Observation":
-                    builder.add_observation(person_id=person_id, observation_concept_id=1001, observation_date=date(2000, 6, 1))
+                    builder.add_observation(
+                        person_id=person_id,
+                        observation_concept_id=1001,
+                        observation_date=date(2000, 6, 1),
+                    )
                 elif criteria_type == "ProcedureOccurrence":
-                    builder.add_procedure_occurrence(person_id=person_id, procedure_concept_id=1001, procedure_date=date(2000, 6, 1))
+                    builder.add_procedure_occurrence(
+                        person_id=person_id,
+                        procedure_concept_id=1001,
+                        procedure_date=date(2000, 6, 1),
+                    )
                 elif criteria_type == "Specimen":
-                    builder.add_specimen(person_id=person_id, specimen_concept_id=1001, specimen_date=date(2000, 6, 1))
+                    builder.add_specimen(
+                        person_id=person_id,
+                        specimen_concept_id=1001,
+                        specimen_date=date(2000, 6, 1),
+                    )
                 elif criteria_type == "VisitOccurrence":
-                    builder.add_visit_occurrence(person_id=person_id, visit_start_date=date(2000, 6, 1), visit_end_date=date(2000, 6, 1), visit_concept_id=1001)
+                    builder.add_visit_occurrence(
+                        person_id=person_id,
+                        visit_start_date=date(2000, 6, 1),
+                        visit_end_date=date(2000, 6, 1),
+                        visit_concept_id=1001,
+                    )
                 else:
                     raise ValueError(f"Unsupported criteria type: {criteria_type}")
 

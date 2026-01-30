@@ -114,7 +114,9 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.out.write_text(
+        json.dumps(out, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0
 
 

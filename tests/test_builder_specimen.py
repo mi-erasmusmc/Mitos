@@ -37,7 +37,9 @@ def test_specimen_applies_text_and_codeset_filters():
             "specimen_source_id": ["ABC-123", "XYZ-999"],
         }
     )
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
 
     conn.create_table("specimen", specimen_df, overwrite=True)
     conn.create_table("person", person_df, overwrite=True)

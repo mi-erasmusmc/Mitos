@@ -8,6 +8,7 @@ from mitos.build_context import BuildContext, CohortBuildOptions
 from mitos.builders.registry import build_events
 from mitos.tables import DoseEra
 
+
 def make_context(conn, concept_ids):
     codesets = ibis.memtable(
         {

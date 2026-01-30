@@ -40,14 +40,22 @@ def test_visit_detail_filters_concepts_and_locations():
     )
     conn.create_table("visit_detail", visit_detail_df, overwrite=True)
 
-    person_df = pl.DataFrame({"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]})
+    person_df = pl.DataFrame(
+        {"person_id": [1], "year_of_birth": [1980], "gender_concept_id": [8507]}
+    )
     conn.create_table("person", person_df, overwrite=True)
 
-    provider_df = pl.DataFrame({"provider_id": [100, 101], "specialty_concept_id": [601, 999]})
+    provider_df = pl.DataFrame(
+        {"provider_id": [100, 101], "specialty_concept_id": [601, 999]}
+    )
     conn.create_table("provider", provider_df, overwrite=True)
 
     care_site_df = pl.DataFrame(
-        {"care_site_id": [200, 201], "place_of_service_concept_id": [501, 999], "location_id": [3000, 3001]}
+        {
+            "care_site_id": [200, 201],
+            "place_of_service_concept_id": [501, 999],
+            "location_id": [3000, 3001],
+        }
     )
     conn.create_table("care_site", care_site_df, overwrite=True)
 
@@ -57,13 +65,19 @@ def test_visit_detail_filters_concepts_and_locations():
             "location_id": [3000, 3001],
             "entity_id": [200, 201],
             "domain_id": ["CARE_SITE", "CARE_SITE"],
-            "start_date": pl.Series("start_date", [datetime(2019, 1, 1), datetime(2019, 1, 1)], dtype=pl.Datetime),
+            "start_date": pl.Series(
+                "start_date",
+                [datetime(2019, 1, 1), datetime(2019, 1, 1)],
+                dtype=pl.Datetime,
+            ),
             "end_date": pl.Series("end_date", [None, None], dtype=pl.Datetime),
         }
     )
     conn.create_table("location_history", location_history_df, overwrite=True)
 
-    location_df = pl.DataFrame({"location_id": [3000, 3001], "region_concept_id": [701, 999]})
+    location_df = pl.DataFrame(
+        {"location_id": [3000, 3001], "region_concept_id": [701, 999]}
+    )
     conn.create_table("location", location_df, overwrite=True)
 
     ctx = make_context(conn)

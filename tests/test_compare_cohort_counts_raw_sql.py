@@ -52,4 +52,3 @@ def test_exec_raw_closes_cursor_for_other_backends():
     con = _FakeDbxBackend()
     _exec_raw(con, "SELECT 1")
     assert con.cursor.closed is True
-
