@@ -6,7 +6,10 @@ import polars as pl
 from mitos.build_context import BuildContext, CohortBuildOptions, CodesetResource
 from mitos.builders.common import apply_codeset_filter
 from mitos.builders.groups import _combine_threshold
+from mitos.builders.post_processing import apply_inclusion_rules
 from mitos.ibis_compat import table_from_literal_list
+from mitos.cohort_expression import InclusionRule
+from mitos.criteria import CriteriaGroup
 
 
 def test_table_from_literal_list_empty_compiles_for_postgres():
@@ -58,3 +61,33 @@ def test_apply_codeset_filter_can_be_applied_twice_without_ambiguous_field_error
     finally:
         ctx.close()
 
+
+def test_inclusion_rule_mask_uses_integer_bitops_in_postgres_sql():
+    con = ibis.duckdb.connect(database=":memory:")
+    con.create_table(
+        "events",
+        pl.DataFrame(
+            {
+                "person_id": [1],
+                "event_id": [1],
+            }
+        ),
+        overwrite=True,
+    )
+    options = CohortBuildOptions(cdm_schema="main", vocabulary_schema="main", backend="duckdb")
+    ctx = BuildContext(con, options, CodesetResource(table=table_from_literal_list([], column_name="concept_id").mutate(
+        codeset_id=ibis.null().cast("int64")
+    ).select("codeset_id", "concept_id")))
+    try:
+        # Create two trivial inclusion rules whose masks are always true.
+        rules = [
+            InclusionRule(name="r1", expression=CriteriaGroup()),
+            InclusionRule(name="r2", expression=CriteriaGroup()),
+        ]
+        out = apply_inclusion_rules(con.table("events"), rules, ctx)
+        sql = out.to_sql(dialect="postgres").upper()
+        # Ensure the SUM() feeding the mask is explicitly cast back to BIGINT so `&` works on Postgres.
+        assert "&" in sql
+        assert "CAST(CAST(SUM" in sql
+    finally:
+        ctx.close()
