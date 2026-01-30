@@ -67,3 +67,9 @@ use `${VAR}` placeholders. CLI flags override the YAML fields (e.g.
 `--json`, `--cdm-schema`, `--result-schema`, `--circe-sql-out`). The
 script will also ensure the target cohort table exists, run Circe SQL via
 R, and clean up the inserted cohort rows after counting.
+
+## CI / Releases
+
+- PR CI runs the unit test suite (`.github/workflows/ci.yml`) and builds the Postgres Docker image (`.github/workflows/docker.yml`).
+- Oracle parity tests that require R/CirceR are run on a schedule or manually (`.github/workflows/oracle.yml`).
+- Pushing a tag matching `v*` creates a GitHub Release with sdist/wheel artifacts (`.github/workflows/release.yml`).

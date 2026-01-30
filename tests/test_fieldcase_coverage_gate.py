@@ -83,6 +83,9 @@ def test_fieldcases_cover_all_fields_used_by_fixtures():
     if not rscript_available():
         pytest.skip("Rscript not available; FieldCase coverage gate is CI-only.")
 
+    if not Path("report_sweep_new.json").exists():
+        pytest.skip("report_sweep_new.json not available (local-only sweep artifact).")
+
     inventory = _load_circe_inventory()
     used, never_validated = _collect_sweep_used_keys(inventory=inventory)
     covered_counts = _collect_covered_keys_from_fieldcases(inventory=inventory)
