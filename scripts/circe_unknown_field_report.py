@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
-from dataclasses import asdict
 from pathlib import Path
 
 from mitos.testing.circe_unknown_fields import iter_unknown_circe_fields

@@ -1010,7 +1010,6 @@ def execute_circe_sql(
     sql_ms = (time.perf_counter() - sql_start) * 1000
 
     count_start = time.perf_counter()
-    count_query = f"SELECT COUNT(*) FROM {qualified_table} WHERE cohort_definition_id = {cfg.cohort_id}"
     target_db = cfg.result_schema or cfg.cdm_schema
     cohort_tbl = (
         con.table(cfg.cohort_table, database=target_db)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from mitos.build_context import BuildContext
 from mitos.tables import Measurement
-from mitos.criteria import ConceptSetSelection
 from mitos.builders.common import (
     apply_age_filter,
     apply_codeset_filter,

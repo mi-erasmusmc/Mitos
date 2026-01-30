@@ -6,7 +6,6 @@ import ibis
 
 from mitos.build_context import BuildContext, CohortBuildOptions
 from mitos.builders.measurement import build_measurement
-from mitos.criteria import NumericRange
 from mitos.tables import Measurement
 
 

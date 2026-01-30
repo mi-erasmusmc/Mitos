@@ -10,7 +10,6 @@ from mitos.builders.registry import build_events
 from mitos.builders.common import (
     apply_age_filter,
     apply_gender_filter,
-    apply_visit_concept_filters,
     apply_race_filter,
     apply_ethnicity_filter,
     apply_date_range,

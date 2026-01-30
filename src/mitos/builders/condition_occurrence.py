@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ibis
 
 from mitos.build_context import BuildContext
 from mitos.tables import ConditionOccurrence
@@ -12,7 +11,6 @@ from mitos.builders.common import (
     apply_date_range,
     apply_first_event,
     apply_gender_filter,
-    apply_numeric_range,
     apply_visit_concept_filters,
     standardize_output,
 )

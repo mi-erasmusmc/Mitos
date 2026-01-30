@@ -12,7 +12,6 @@ from mitos.builders.common import (
     apply_gender_filter,
     apply_numeric_range,
     apply_provider_specialty_filter,
-    apply_visit_concept_filters,
     project_event_columns,
     standardize_output,
 )

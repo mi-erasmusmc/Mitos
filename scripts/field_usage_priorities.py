@@ -9,7 +9,6 @@ from typing import Any
 def _priority_key(entry: dict[str, Any]) -> tuple[int, int, float, str]:
     used_in = int(entry.get("used_in", 0))
     nonzero_in_both = int(entry.get("nonzero_in_both", 0))
-    zero_in_both = int(entry.get("zero_in_both", 0))
     coverage_ratio = (nonzero_in_both / used_in) if used_in else 0.0
 
     # Highest priority: appears in phenotypes, but never in any non-zero cohort output.

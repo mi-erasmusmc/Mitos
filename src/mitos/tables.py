@@ -7,7 +7,6 @@ from .criteria import (
     DateRange,
     NumericRange,
     Concept,
-    TextFilter,
     ConceptSetSelection,
     TextFilter,
 )

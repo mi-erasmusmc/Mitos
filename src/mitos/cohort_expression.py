@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Union, Any, Dict
+from typing import Optional, Any
 
 from pydantic import (
     BaseModel,
@@ -18,16 +17,6 @@ from .criteria import Criteria, CriteriaGroup
 from .concept_set import ConceptSet
 from .strategy import EndStrategy
 from .tables import (
-    ConditionOccurrence,
-    ConditionEra,
-    VisitOccurrence,
-    DrugExposure,
-    DrugEra,
-    DoseEra,
-    Measurement,
-    Observation,
-    ObservationPeriod,
-    Specimen,
     parse_criteria_list,
     serialize_criteria,
 )

@@ -7,8 +7,7 @@ from mitos.build_context import BuildContext
 from mitos.builders.groups import apply_criteria_group
 from mitos.builders.registry import build_events
 from mitos.cohort_expression import InclusionRule
-from mitos.tables import Criteria, DrugExposure
-from mitos.builders.common import collapse_events
+from mitos.tables import Criteria
 
 
 def apply_additional_criteria(events: ir.Table, group, ctx: BuildContext) -> ir.Table:
